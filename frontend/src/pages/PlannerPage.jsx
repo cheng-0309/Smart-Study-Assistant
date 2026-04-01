@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -181,7 +181,7 @@ function PlanDisplay({ plan }) {
               <ul className="space-y-1">
                 {day.tasks.map((task, j) => (
                   <li
-                    key={j}
+                    key={`task-${day.day}-${j}`}
                     className="flex items-start gap-2 text-sm text-muted-foreground"
                   >
                     <CheckCircle weight="bold" className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[hsl(var(--primary)/0.5)]" />
@@ -263,18 +263,17 @@ export default function PlannerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const fetchPlans = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API}/planners`);
-      setPlans(res.data);
-    } catch (err) {
-      console.error("Failed to fetch plans", err);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchPlans();
-  }, [fetchPlans]);
+    async function loadPlans() {
+      try {
+        const res = await axios.get(`${API}/planners`);
+        setPlans(res.data);
+      } catch {
+        /* silent on initial load */
+      }
+    }
+    loadPlans();
+  }, []);
 
   const handleGenerate = async (topic, hoursPerDay, numDays) => {
     setIsLoading(true);
@@ -287,8 +286,7 @@ export default function PlannerPage() {
       setActivePlan(res.data);
       setPlans((prev) => [res.data, ...prev]);
       toast.success("Study plan created!");
-    } catch (err) {
-      console.error("Failed to generate plan", err);
+    } catch {
       toast.error("Failed to generate plan. Please try again.");
     } finally {
       setIsLoading(false);
@@ -301,7 +299,7 @@ export default function PlannerPage() {
       setPlans((prev) => prev.filter((p) => p.id !== id));
       if (activePlan?.id === id) setActivePlan(null);
       toast.success("Plan deleted");
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete plan");
     }
   };
@@ -329,7 +327,7 @@ export default function PlannerPage() {
                 >
                   <div className="space-y-4">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="flex gap-4">
+                      <div key={`skel-${i}`} className="flex gap-4">
                         <div className="w-10 h-10 bg-muted rounded-sm loading-bar" style={{ animationDelay: `${i * 0.15}s` }} />
                         <div className="flex-1 space-y-2">
                           <div className="h-3 bg-muted rounded w-1/3 loading-bar" style={{ animationDelay: `${i * 0.15 + 0.05}s` }} />

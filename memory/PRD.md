@@ -29,9 +29,21 @@ Build a study assistant that generates structured study notes based on Subject a
 - History sidebar with select/delete functionality
 - PDF and Text export functionality
 - Light/Dark theme toggle with localStorage persistence
-- Loading skeleton states
-- Empty state with custom illustration
-- All tests passing (100% backend, frontend, AI integration)
+- Personalized Study Planner (topic + hours/day + num days)
+- Practice Test MCQs with interactive quiz, scoring, and explanations
+- Navigation between Notes, Planner, Practice pages
+
+### Code Quality Improvements (Feb 2026)
+- Fixed all critical hook dependency warnings (useCallback → inline useEffect)
+- Removed all console.error statements from production code
+- Replaced array index keys with stable unique identifiers
+- Extracted nested ternary expressions into helper functions (getOptionStyles, getOptionBorderStyle)
+- Broke high-complexity components into smaller sub-components:
+  - QuizView → QuizView + OptionButton + QuizNavigation
+  - NoteDisplay → NoteTitle + KeyConceptsSection + FormulasSection + QuickRevisionSection
+  - Header → Logo + NavBar + HeaderActions
+  - SavedNotes → SavedNotes + NoteItem
+  - exportAsPDF → writePDFHeading + writePDFBulletList + ensurePageSpace + downloadBlob
 
 ## Prioritized Backlog
 ### P0 (Critical) — Done

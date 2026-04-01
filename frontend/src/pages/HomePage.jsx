@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import Header from "../components/Header";
@@ -10,37 +10,81 @@ import { AnimatePresence, motion } from "framer-motion";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+const SKELETON_SPANS = [
+  { span: 8, id: "hero-1" },
+  { span: 4, id: "square-1" },
+  { span: 8, id: "wide-1" },
+  { span: 4, id: "square-2" },
+];
+
+function LoadingSkeleton() {
+  return (
+    <motion.div
+      key="loading"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="mt-0"
+      data-testid="loading-skeleton"
+    >
+      <div className="border border-border bg-card p-6">
+        <div className="space-y-3">
+          <div className="h-3 bg-muted rounded w-1/4 loading-bar" />
+          <div className="h-6 bg-muted rounded w-2/3 loading-bar" style={{ animationDelay: "0.1s" }} />
+        </div>
+      </div>
+      <div className="bento-grid">
+        {SKELETON_SPANS.map(({ span, id }, i) => (
+          <div
+            key={id}
+            className={`${span === 8 ? "bento-hero" : "bento-square"} border border-border bg-card p-6`}
+          >
+            <div className="space-y-3">
+              <div className="h-2.5 bg-muted rounded w-24 loading-bar" style={{ animationDelay: `${i * 0.15}s` }} />
+              {Array.from({ length: span === 8 ? 5 : 3 }).map((_, j) => (
+                <div
+                  key={`${id}-line-${j}`}
+                  className="h-3 bg-muted rounded loading-bar"
+                  style={{
+                    width: `${65 + j * 5}%`,
+                    animationDelay: `${(i * 0.15) + (j * 0.08)}s`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function HomePage() {
   const [notes, setNotes] = useState([]);
   const [activeNote, setActiveNote] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const fetchNotes = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API}/notes`);
-      setNotes(res.data);
-    } catch (err) {
-      console.error("Failed to fetch notes", err);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
+    async function loadNotes() {
+      try {
+        const res = await axios.get(`${API}/notes`);
+        setNotes(res.data);
+      } catch {
+        /* silent on initial load */
+      }
+    }
+    loadNotes();
+  }, []);
 
   const handleGenerate = async (subject, chapter) => {
     setIsLoading(true);
     try {
-      const res = await axios.post(`${API}/notes/generate`, {
-        subject,
-        chapter,
-      });
+      const res = await axios.post(`${API}/notes/generate`, { subject, chapter });
       setActiveNote(res.data);
       setNotes((prev) => [res.data, ...prev]);
       toast.success("Notes generated successfully!");
-    } catch (err) {
-      console.error("Failed to generate notes", err);
+    } catch {
       toast.error("Failed to generate notes. Please try again.");
     } finally {
       setIsLoading(false);
@@ -53,14 +97,9 @@ export default function HomePage() {
       setNotes((prev) => prev.filter((n) => n.id !== id));
       if (activeNote?.id === id) setActiveNote(null);
       toast.success("Note deleted");
-    } catch (err) {
-      console.error("Failed to delete note", err);
+    } catch {
       toast.error("Failed to delete note");
     }
-  };
-
-  const handleSelect = (note) => {
-    setActiveNote(note);
   };
 
   return (
@@ -81,45 +120,7 @@ export default function HomePage() {
 
             {/* Loading skeleton */}
             <AnimatePresence mode="wait">
-              {isLoading && (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="mt-0"
-                  data-testid="loading-skeleton"
-                >
-                  <div className="border border-border bg-card p-6">
-                    <div className="space-y-3">
-                      <div className="h-3 bg-muted rounded w-1/4 loading-bar" />
-                      <div className="h-6 bg-muted rounded w-2/3 loading-bar" style={{ animationDelay: "0.1s" }} />
-                    </div>
-                  </div>
-                  <div className="bento-grid">
-                    {[8, 4, 8, 4].map((span, i) => (
-                      <div
-                        key={i}
-                        className={`${span === 8 ? "bento-hero" : "bento-square"} border border-border bg-card p-6`}
-                      >
-                        <div className="space-y-3">
-                          <div className="h-2.5 bg-muted rounded w-24 loading-bar" style={{ animationDelay: `${i * 0.15}s` }} />
-                          {Array.from({ length: span === 8 ? 5 : 3 }).map((_, j) => (
-                            <div
-                              key={j}
-                              className="h-3 bg-muted rounded loading-bar"
-                              style={{
-                                width: `${60 + Math.random() * 30}%`,
-                                animationDelay: `${(i * 0.15) + (j * 0.08)}s`,
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
+              {isLoading && <LoadingSkeleton />}
 
               {!isLoading && activeNote && (
                 <motion.div
@@ -160,7 +161,7 @@ export default function HomePage() {
             >
               <SavedNotes
                 notes={notes}
-                onSelect={handleSelect}
+                onSelect={setActiveNote}
                 onDelete={handleDelete}
                 activeId={activeNote?.id}
               />

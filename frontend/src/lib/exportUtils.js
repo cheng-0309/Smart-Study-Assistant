@@ -30,13 +30,44 @@ export function exportAsText(note) {
     text += `  ${i + 1}. ${r}\n`;
   });
 
-  const blob = new Blob([text], { type: "text/plain" });
+  downloadBlob(new Blob([text], { type: "text/plain" }), `${subject} - ${chapter}.txt`);
+}
+
+function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${subject} - ${chapter}.txt`;
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function ensurePageSpace(doc, y, needed) {
+  if (y + needed > 280) {
+    doc.addPage();
+    return 20;
+  }
+  return y;
+}
+
+function writePDFHeading(doc, title, y) {
+  y = ensurePageSpace(doc, y, 15);
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text(title, 20, y);
+  return y + 7;
+}
+
+function writePDFBulletList(doc, items, pageWidth, y) {
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  for (const item of items) {
+    const lines = doc.splitTextToSize(item, pageWidth - 45);
+    y = ensurePageSpace(doc, y, lines.length * 5 + 2);
+    doc.text(lines, 25, y);
+    y += lines.length * 5 + 2;
+  }
+  return y;
 }
 
 export function exportAsPDF(note) {
@@ -50,95 +81,45 @@ export function exportAsPDF(note) {
   doc.setFont("helvetica", "bold");
   doc.text("STUDY NOTES", pageWidth / 2, y, { align: "center" });
   y += 10;
-
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.text(`Subject: ${subject}`, 20, y);
   y += 6;
   doc.text(`Chapter: ${chapter}`, 20, y);
   y += 10;
-
-  // Line
   doc.setDrawColor(200);
   doc.line(20, y, pageWidth - 20, y);
   y += 8;
 
   // Key Concepts
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.text("Key Concepts", 20, y);
-  y += 7;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  content.key_concepts.forEach((c) => {
-    const lines = doc.splitTextToSize(`• ${c}`, pageWidth - 45);
-    if (y + lines.length * 5 > 280) {
-      doc.addPage();
-      y = 20;
-    }
-    doc.text(lines, 25, y);
-    y += lines.length * 5 + 2;
-  });
+  y = writePDFHeading(doc, "Key Concepts", y);
+  y = writePDFBulletList(doc, content.key_concepts.map((c) => `\u2022 ${c}`), pageWidth, y);
   y += 4;
 
   // Formulas
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  if (y > 260) { doc.addPage(); y = 20; }
-  doc.text("Important Formulas", 20, y);
-  y += 7;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+  y = writePDFHeading(doc, "Important Formulas", y);
   if (content.formulas.length > 0) {
-    content.formulas.forEach((f) => {
-      const text = `${f.formula}  —  ${f.meaning}`;
-      const lines = doc.splitTextToSize(text, pageWidth - 45);
-      if (y + lines.length * 5 > 280) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(lines, 25, y);
-      y += lines.length * 5 + 2;
-    });
+    y = writePDFBulletList(doc, content.formulas.map((f) => `${f.formula}  \u2014  ${f.meaning}`), pageWidth, y);
   } else {
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
     doc.text("(No formulas for this chapter)", 25, y);
     y += 7;
   }
   y += 4;
 
   // Explanation
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  if (y > 260) { doc.addPage(); y = 20; }
-  doc.text("Explanation", 20, y);
-  y += 7;
+  y = writePDFHeading(doc, "Explanation", y);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   const expLines = doc.splitTextToSize(content.explanation, pageWidth - 45);
-  if (y + expLines.length * 5 > 280) {
-    doc.addPage();
-    y = 20;
-  }
+  y = ensurePageSpace(doc, y, expLines.length * 5);
   doc.text(expLines, 25, y);
   y += expLines.length * 5 + 6;
 
   // Quick Revision
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  if (y > 260) { doc.addPage(); y = 20; }
-  doc.text("Quick Revision", 20, y);
-  y += 7;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  content.quick_revision.forEach((r, i) => {
-    const lines = doc.splitTextToSize(`${i + 1}. ${r}`, pageWidth - 45);
-    if (y + lines.length * 5 > 280) {
-      doc.addPage();
-      y = 20;
-    }
-    doc.text(lines, 25, y);
-    y += lines.length * 5 + 2;
-  });
+  y = writePDFHeading(doc, "Quick Revision", y);
+  y = writePDFBulletList(doc, content.quick_revision.map((r, i) => `${i + 1}. ${r}`), pageWidth, y);
 
   doc.save(`${subject} - ${chapter}.pdf`);
 }

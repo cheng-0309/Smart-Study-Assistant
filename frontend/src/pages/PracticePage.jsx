@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -114,6 +114,100 @@ function PracticeForm({ onGenerate, isLoading }) {
   );
 }
 
+function getOptionLabelStyle(isSelected, isCorrect, isWrong, submitted) {
+  if (isSelected && !submitted) return "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]";
+  if (isCorrect) return "bg-green-500 text-white";
+  if (isWrong) return "bg-red-500 text-white";
+  return "bg-muted text-muted-foreground";
+}
+
+function getOptionBorderStyle(isSelected, isCorrect, isWrong, submitted) {
+  if (submitted) {
+    if (isCorrect) return { border: "border-green-500", bg: "bg-green-500/5" };
+    if (isWrong) return { border: "border-red-500", bg: "bg-red-500/5" };
+    return { border: "border-border opacity-50", bg: "bg-background" };
+  }
+  if (isSelected) return { border: "border-[hsl(var(--primary))]", bg: "bg-[hsl(var(--primary)/0.05)]" };
+  return { border: "border-border hover:border-[hsl(var(--primary)/0.4)]", bg: "bg-background" };
+}
+
+function OptionButton({ opt, isSelected, isCorrect, isWrong, submitted, onSelect }) {
+  const { border, bg } = getOptionBorderStyle(isSelected, isCorrect, isWrong, submitted);
+  const labelStyle = getOptionLabelStyle(isSelected, isCorrect, isWrong, submitted);
+
+  return (
+    <button
+      data-testid={`option-${opt.label}`}
+      onClick={() => onSelect(opt.label)}
+      disabled={submitted}
+      className={`flex items-start gap-3 p-4 border rounded-sm text-left transition-all ${border} ${bg} ${
+        !submitted ? "cursor-pointer" : "cursor-default"
+      }`}
+    >
+      <span className={`shrink-0 w-7 h-7 rounded-sm flex items-center justify-center font-mono text-xs font-bold ${labelStyle}`}>
+        {opt.label}
+      </span>
+      <span className="text-sm leading-relaxed flex-1">{opt.text}</span>
+      {submitted && isCorrect && <CheckCircle weight="bold" className="w-5 h-5 text-green-500 shrink-0" />}
+      {submitted && isWrong && <XCircle weight="bold" className="w-5 h-5 text-red-500 shrink-0" />}
+    </button>
+  );
+}
+
+function QuizNavigation({ currentQ, totalQ, answers, submitted, onPrev, onNext, onSubmit, onReset, onDotClick }) {
+  return (
+    <div className="p-4 border-t border-border flex items-center justify-between">
+      <Button
+        data-testid="prev-question-btn"
+        variant="outline"
+        size="sm"
+        className="rounded-sm"
+        disabled={currentQ === 0}
+        onClick={onPrev}
+      >
+        Previous
+      </Button>
+
+      <div className="flex items-center gap-1.5">
+        {Array.from({ length: totalQ }).map((_, i) => (
+          <button
+            key={`dot-${i}`}
+            onClick={() => onDotClick(i)}
+            data-testid={`question-dot-${i}`}
+            className={`w-2.5 h-2.5 rounded-full transition-colors ${
+              i === currentQ
+                ? "bg-[hsl(var(--primary))]"
+                : answers[i]
+                ? "bg-[hsl(var(--primary)/0.4)]"
+                : "bg-muted-foreground/20"
+            }`}
+          />
+        ))}
+      </div>
+
+      {submitted ? (
+        <Button data-testid="retake-quiz-btn" variant="outline" size="sm" className="rounded-sm" onClick={onReset}>
+          Retake Test
+        </Button>
+      ) : currentQ < totalQ - 1 ? (
+        <Button data-testid="next-question-btn" variant="outline" size="sm" className="rounded-sm gap-1" onClick={onNext}>
+          Next <ArrowRight className="w-3.5 h-3.5" />
+        </Button>
+      ) : (
+        <Button
+          data-testid="submit-quiz-btn"
+          size="sm"
+          className="rounded-sm bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold"
+          onClick={onSubmit}
+          disabled={Object.keys(answers).length < totalQ}
+        >
+          Submit Answers
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function QuizView({ test }) {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -134,44 +228,24 @@ function QuizView({ test }) {
     setAnswers((prev) => ({ ...prev, [currentQ]: label }));
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setCurrentQ(0);
-  };
-
-  const handleReset = () => {
-    setAnswers({});
-    setSubmitted(false);
-    setCurrentQ(0);
-  };
-
   return (
     <div data-testid="quiz-view" className="border border-border bg-card">
       {/* Header */}
       <div className="p-6 border-b border-border flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <div className="overline text-muted-foreground mb-1">{test.subject}</div>
-          <h2
-            className="text-xl md:text-2xl font-black tracking-tight"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
+          <h2 className="text-xl md:text-2xl font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
             {test.chapter}
           </h2>
         </div>
         <div className="flex items-center gap-3">
           {submitted && (
-            <Badge
-              data-testid="quiz-score"
-              variant="outline"
-              className="rounded-sm px-3 py-1.5 text-sm font-bold gap-1.5"
-            >
+            <Badge data-testid="quiz-score" variant="outline" className="rounded-sm px-3 py-1.5 text-sm font-bold gap-1.5">
               <Trophy weight="bold" className="w-4 h-4 text-[hsl(var(--primary))]" />
               {score}/{totalQ}
             </Badge>
           )}
-          <div className="font-mono text-xs text-muted-foreground">
-            {currentQ + 1} / {totalQ}
-          </div>
+          <div className="font-mono text-xs text-muted-foreground">{currentQ + 1} / {totalQ}</div>
         </div>
       </div>
 
@@ -186,73 +260,24 @@ function QuizView({ test }) {
           className="p-6"
         >
           <p className="text-base font-medium mb-6" data-testid={`question-${currentQ}`}>
-            <span className="font-mono text-[hsl(var(--primary))] mr-2">
-              Q{currentQ + 1}.
-            </span>
+            <span className="font-mono text-[hsl(var(--primary))] mr-2">Q{currentQ + 1}.</span>
             {q.question}
           </p>
 
-          {/* Options */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {q.options.map((opt) => {
-              const isSelected = answers[currentQ] === opt.label;
-              const isCorrect = submitted && opt.label === q.correct_answer;
-              const isWrong = submitted && isSelected && opt.label !== q.correct_answer;
-
-              let borderClass = "border-border hover:border-[hsl(var(--primary)/0.4)]";
-              let bgClass = "bg-background";
-
-              if (submitted) {
-                if (isCorrect) {
-                  borderClass = "border-green-500";
-                  bgClass = "bg-green-500/5";
-                } else if (isWrong) {
-                  borderClass = "border-red-500";
-                  bgClass = "bg-red-500/5";
-                } else {
-                  borderClass = "border-border opacity-50";
-                }
-              } else if (isSelected) {
-                borderClass = "border-[hsl(var(--primary))]";
-                bgClass = "bg-[hsl(var(--primary)/0.05)]";
-              }
-
-              return (
-                <button
-                  key={opt.label}
-                  data-testid={`option-${opt.label}`}
-                  onClick={() => handleSelect(opt.label)}
-                  disabled={submitted}
-                  className={`flex items-start gap-3 p-4 border rounded-sm text-left transition-all ${borderClass} ${bgClass} ${
-                    !submitted ? "cursor-pointer" : "cursor-default"
-                  }`}
-                >
-                  <span
-                    className={`shrink-0 w-7 h-7 rounded-sm flex items-center justify-center font-mono text-xs font-bold ${
-                      isSelected && !submitted
-                        ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-                        : isCorrect
-                        ? "bg-green-500 text-white"
-                        : isWrong
-                        ? "bg-red-500 text-white"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {opt.label}
-                  </span>
-                  <span className="text-sm leading-relaxed flex-1">{opt.text}</span>
-                  {submitted && isCorrect && (
-                    <CheckCircle weight="bold" className="w-5 h-5 text-green-500 shrink-0" />
-                  )}
-                  {submitted && isWrong && (
-                    <XCircle weight="bold" className="w-5 h-5 text-red-500 shrink-0" />
-                  )}
-                </button>
-              );
-            })}
+            {q.options.map((opt) => (
+              <OptionButton
+                key={opt.label}
+                opt={opt}
+                isSelected={answers[currentQ] === opt.label}
+                isCorrect={submitted && opt.label === q.correct_answer}
+                isWrong={submitted && answers[currentQ] === opt.label && opt.label !== q.correct_answer}
+                submitted={submitted}
+                onSelect={handleSelect}
+              />
+            ))}
           </div>
 
-          {/* Explanation (after submit) */}
           {submitted && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -267,70 +292,17 @@ function QuizView({ test }) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Navigation */}
-      <div className="p-4 border-t border-border flex items-center justify-between">
-        <Button
-          data-testid="prev-question-btn"
-          variant="outline"
-          size="sm"
-          className="rounded-sm"
-          disabled={currentQ === 0}
-          onClick={() => setCurrentQ((p) => p - 1)}
-        >
-          Previous
-        </Button>
-
-        <div className="flex items-center gap-1.5">
-          {questions.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentQ(i)}
-              data-testid={`question-dot-${i}`}
-              className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                i === currentQ
-                  ? "bg-[hsl(var(--primary))]"
-                  : answers[i]
-                  ? "bg-[hsl(var(--primary)/0.4)]"
-                  : "bg-muted-foreground/20"
-              }`}
-            />
-          ))}
-        </div>
-
-        {!submitted ? (
-          currentQ < totalQ - 1 ? (
-            <Button
-              data-testid="next-question-btn"
-              variant="outline"
-              size="sm"
-              className="rounded-sm gap-1"
-              onClick={() => setCurrentQ((p) => p + 1)}
-            >
-              Next <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
-          ) : (
-            <Button
-              data-testid="submit-quiz-btn"
-              size="sm"
-              className="rounded-sm bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold"
-              onClick={handleSubmit}
-              disabled={Object.keys(answers).length < totalQ}
-            >
-              Submit Answers
-            </Button>
-          )
-        ) : (
-          <Button
-            data-testid="retake-quiz-btn"
-            variant="outline"
-            size="sm"
-            className="rounded-sm"
-            onClick={handleReset}
-          >
-            Retake Test
-          </Button>
-        )}
-      </div>
+      <QuizNavigation
+        currentQ={currentQ}
+        totalQ={totalQ}
+        answers={answers}
+        submitted={submitted}
+        onPrev={() => setCurrentQ((p) => p - 1)}
+        onNext={() => setCurrentQ((p) => p + 1)}
+        onSubmit={() => { setSubmitted(true); setCurrentQ(0); }}
+        onReset={() => { setAnswers({}); setSubmitted(false); setCurrentQ(0); }}
+        onDotClick={setCurrentQ}
+      />
     </div>
   );
 }
@@ -404,18 +376,17 @@ export default function PracticePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const fetchTests = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API}/practices`);
-      setTests(res.data);
-    } catch (err) {
-      console.error("Failed to fetch tests", err);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchTests();
-  }, [fetchTests]);
+    async function loadTests() {
+      try {
+        const res = await axios.get(`${API}/practices`);
+        setTests(res.data);
+      } catch {
+        /* silent on initial load */
+      }
+    }
+    loadTests();
+  }, []);
 
   const handleGenerate = async (subject, chapter, numQuestions) => {
     setIsLoading(true);
@@ -428,8 +399,7 @@ export default function PracticePage() {
       setActiveTest(res.data);
       setTests((prev) => [res.data, ...prev]);
       toast.success("Practice test generated!");
-    } catch (err) {
-      console.error("Failed to generate test", err);
+    } catch {
       toast.error("Failed to generate test. Please try again.");
     } finally {
       setIsLoading(false);
@@ -442,7 +412,7 @@ export default function PracticePage() {
       setTests((prev) => prev.filter((t) => t.id !== id));
       if (activeTest?.id === id) setActiveTest(null);
       toast.success("Test deleted");
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete test");
     }
   };
@@ -470,7 +440,7 @@ export default function PracticePage() {
                 >
                   <div className="space-y-4">
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="space-y-2">
+                      <div key={`skel-${i}`} className="space-y-2">
                         <div className="h-4 bg-muted rounded w-3/4 loading-bar" style={{ animationDelay: `${i * 0.2}s` }} />
                         <div className="grid grid-cols-2 gap-2">
                           <div className="h-12 bg-muted rounded loading-bar" style={{ animationDelay: `${i * 0.2 + 0.1}s` }} />

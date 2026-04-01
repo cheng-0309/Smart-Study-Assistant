@@ -140,9 +140,101 @@ class StudyNotesAPITester:
         )
         return success
 
+    # === PLANNER TESTS ===
+    
+    def test_generate_planner(self):
+        """Test POST /api/planner/generate - AI planner generation"""
+        success, response = self.run_test(
+            "Generate Study Plan (AI)",
+            "POST",
+            "/planner/generate",
+            200,
+            data={"topic": "Machine Learning", "hours_per_day": 2.0, "num_days": 7},
+            timeout=60  # AI generation can take longer
+        )
+        if success and 'id' in response:
+            return response['id']
+        return None
+
+    def test_get_all_planners(self):
+        """Test GET /api/planners returns list of plans"""
+        success, response = self.run_test(
+            "Get All Planners",
+            "GET",
+            "/planners",
+            200
+        )
+        return success, response
+
+    def test_delete_planner(self, plan_id):
+        """Test DELETE /api/planners/{id} deletes plan"""
+        success, response = self.run_test(
+            "Delete Planner",
+            "DELETE",
+            f"/planners/{plan_id}",
+            200
+        )
+        return success
+
+    def test_delete_nonexistent_planner(self):
+        """Test DELETE /api/planners/{invalid_id} returns 404"""
+        success, response = self.run_test(
+            "Delete Nonexistent Planner (404 test)",
+            "DELETE",
+            "/planners/invalid-id-12345",
+            404
+        )
+        return success
+
+    # === PRACTICE TESTS ===
+    
+    def test_generate_practice(self):
+        """Test POST /api/practice/generate - AI practice test generation"""
+        success, response = self.run_test(
+            "Generate Practice Test (AI)",
+            "POST",
+            "/practice/generate",
+            200,
+            data={"subject": "Mathematics", "chapter": "Calculus", "num_questions": 5},
+            timeout=60  # AI generation can take longer
+        )
+        if success and 'id' in response:
+            return response['id']
+        return None
+
+    def test_get_all_practices(self):
+        """Test GET /api/practices returns list of tests"""
+        success, response = self.run_test(
+            "Get All Practice Tests",
+            "GET",
+            "/practices",
+            200
+        )
+        return success, response
+
+    def test_delete_practice(self, test_id):
+        """Test DELETE /api/practices/{id} deletes test"""
+        success, response = self.run_test(
+            "Delete Practice Test",
+            "DELETE",
+            f"/practices/{test_id}",
+            200
+        )
+        return success
+
+    def test_delete_nonexistent_practice(self):
+        """Test DELETE /api/practices/{invalid_id} returns 404"""
+        success, response = self.run_test(
+            "Delete Nonexistent Practice Test (404 test)",
+            "DELETE",
+            "/practices/invalid-id-12345",
+            404
+        )
+        return success
+
 def main():
-    print("🚀 Starting Study Notes API Tests")
-    print("=" * 50)
+    print("🚀 Starting Study Notes API Tests (Notes + Planner + Practice)")
+    print("=" * 60)
     
     tester = StudyNotesAPITester()
     
@@ -150,33 +242,76 @@ def main():
     if not tester.test_welcome_message():
         print("❌ Welcome endpoint failed, but continuing tests...")
 
+    # === NOTES TESTS ===
+    print("\n📝 Testing Notes API...")
+    
     # Test 2: Generate notes (AI integration)
     print("\n🤖 Testing AI Note Generation (may take 10-60 seconds)...")
     note_id = tester.test_generate_notes()
     if not note_id:
         print("❌ Note generation failed, stopping dependent tests")
-        print(f"\n📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
-        return 1
+    else:
+        # Test 3: Get all notes
+        success, notes_response = tester.test_get_all_notes()
+        if not success:
+            print("❌ Get all notes failed")
 
-    # Test 3: Get all notes
-    success, notes_response = tester.test_get_all_notes()
-    if not success:
-        print("❌ Get all notes failed")
+        # Test 4: Get single note
+        if not tester.test_get_single_note(note_id):
+            print("❌ Get single note failed")
 
-    # Test 4: Get single note
-    if not tester.test_get_single_note(note_id):
-        print("❌ Get single note failed")
+        # Test 5: Delete note (cleanup)
+        if not tester.test_delete_note(note_id):
+            print("❌ Delete note failed")
 
-    # Test 5: Error handling tests
+    # Test 6: Error handling tests for notes
     tester.test_get_nonexistent_note()
     tester.test_delete_nonexistent_note()
 
-    # Test 6: Delete note (cleanup)
-    if not tester.test_delete_note(note_id):
-        print("❌ Delete note failed")
+    # === PLANNER TESTS ===
+    print("\n📅 Testing Planner API...")
+    
+    # Test 7: Generate planner (AI integration)
+    print("\n🤖 Testing AI Planner Generation (may take 10-60 seconds)...")
+    plan_id = tester.test_generate_planner()
+    if not plan_id:
+        print("❌ Planner generation failed, stopping dependent tests")
+    else:
+        # Test 8: Get all planners
+        success, planners_response = tester.test_get_all_planners()
+        if not success:
+            print("❌ Get all planners failed")
+
+        # Test 9: Delete planner (cleanup)
+        if not tester.test_delete_planner(plan_id):
+            print("❌ Delete planner failed")
+
+    # Test 10: Error handling tests for planners
+    tester.test_delete_nonexistent_planner()
+
+    # === PRACTICE TESTS ===
+    print("\n🎯 Testing Practice API...")
+    
+    # Test 11: Generate practice test (AI integration)
+    print("\n🤖 Testing AI Practice Test Generation (may take 10-60 seconds)...")
+    test_id = tester.test_generate_practice()
+    if not test_id:
+        print("❌ Practice test generation failed, stopping dependent tests")
+    else:
+        # Test 12: Get all practice tests
+        success, practices_response = tester.test_get_all_practices()
+        if not success:
+            print("❌ Get all practice tests failed")
+
+        # Test 13: Delete practice test (cleanup)
+        if not tester.test_delete_practice(test_id):
+            print("❌ Delete practice test failed")
+
+    # Test 14: Error handling tests for practice tests
+    tester.test_delete_nonexistent_practice()
 
     # Print final results
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
     if tester.tests_passed == tester.tests_run:

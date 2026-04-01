@@ -1,6 +1,7 @@
-import { Sun, Moon, BookOpenText, ClockCounterClockwise } from "@phosphor-icons/react";
+import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam } from "@phosphor-icons/react";
 import { useTheme } from "../context/ThemeContext";
 import { Button } from "../components/ui/button";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Tooltip,
   TooltipContent,
@@ -8,8 +9,16 @@ import {
   TooltipTrigger,
 } from "../components/ui/tooltip";
 
+const NAV_ITEMS = [
+  { path: "/", label: "Notes", icon: NotePencil },
+  { path: "/planner", label: "Planner", icon: CalendarDots },
+  { path: "/practice", label: "Practice", icon: Exam },
+];
+
 export default function Header({ onToggleSidebar, sidebarOpen }) {
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <header
@@ -36,25 +45,51 @@ export default function Header({ onToggleSidebar, sidebarOpen }) {
           </span>
         </div>
 
+        {/* Nav */}
+        <nav className="flex items-center gap-1" data-testid="main-nav">
+          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+            const isActive = location.pathname === path;
+            return (
+              <Button
+                key={path}
+                data-testid={`nav-${label.toLowerCase()}`}
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(path)}
+                className={`rounded-sm h-9 gap-1.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon weight={isActive ? "bold" : "regular"} className="w-4 h-4" />
+                <span className="hidden sm:inline">{label}</span>
+              </Button>
+            );
+          })}
+        </nav>
+
         {/* Right actions */}
         <div className="flex items-center gap-2">
           <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  data-testid="toggle-sidebar-btn"
-                  variant="ghost"
-                  size="icon"
-                  onClick={onToggleSidebar}
-                  className="rounded-sm h-9 w-9"
-                >
-                  <ClockCounterClockwise className="w-[18px] h-[18px]" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                {sidebarOpen ? "Hide" : "Show"} History
-              </TooltipContent>
-            </Tooltip>
+            {onToggleSidebar && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid="toggle-sidebar-btn"
+                    variant="ghost"
+                    size="icon"
+                    onClick={onToggleSidebar}
+                    className="rounded-sm h-9 w-9"
+                  >
+                    <ClockCounterClockwise className="w-[18px] h-[18px]" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {sidebarOpen ? "Hide" : "Show"} History
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             <Tooltip>
               <TooltipTrigger asChild>

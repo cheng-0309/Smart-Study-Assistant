@@ -1,0 +1,106 @@
+{
+  "theme_strategy": {
+    "primary_theme": "Light",
+    "supported_themes": ["Light", "Dark"],
+    "archetype": "Archetype 4 (Swiss & High-Contrast)",
+    "vibe": "Authority, clarity, truth. A digital 'Control Room' for study notes. Stripped of all fluff.",
+    "rationale": "For an educational study tool, users need focus. The Swiss Brutalist aesthetic provides stark clarity and structural hierarchy. Content is the sole focus."
+  },
+  "typography": {
+    "rules": "Radical weight contrast (Black vs Light). Do not use Inter for headings. Use tight tracking for headings.",
+    "fonts": {
+      "headings": {
+        "family": "Chivo",
+        "import_url": "https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;700;900&display=swap",
+        "css_var": "--font-heading",
+        "usage": "H1 (max text-6xl), H2, H3. Apply tracking-tight."
+      },
+      "body": {
+        "family": "DM Sans",
+        "import_url": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap",
+        "css_var": "--font-sans",
+        "usage": "All paragraph and standard UI text."
+      },
+      "mono": {
+        "family": "JetBrains Mono",
+        "import_url": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap",
+        "css_var": "--font-mono",
+        "usage": "Overlines, labels, formulas, and metadata (date, chapter number). Use uppercase + wide tracking (tracking-widest)."
+      }
+    }
+  },
+  "colors": {
+    "light": {
+      "background": "#F9F9F6",
+      "surface": "#FFFFFF",
+      "surface_glass": "rgba(255, 255, 255, 0.7)",
+      "border": "#E5E5E0",
+      "text_primary": "#0A0A0A",
+      "text_secondary": "#5C5C59",
+      "primary": "#FF3333",
+      "primary_hover": "#CC0000",
+      "accent": "#0033FF"
+    },
+    "dark": {
+      "background": "#0C0C0C",
+      "surface": "#1A1A1A",
+      "surface_glass": "rgba(12, 12, 12, 0.7)",
+      "border": "#333333",
+      "text_primary": "#F3F3F3",
+      "text_secondary": "#A1A1A1",
+      "primary": "#FF4D4D",
+      "primary_hover": "#FF8080",
+      "accent": "#6680FF"
+    },
+    "rules": "Monochrome UI. Color exists only to guide action. Never use pure #000000, tint neutrals. Buttons should use primary color."
+  },
+  "layout_and_spacing": {
+    "strategy": "The 'Control Room' Grid",
+    "rules": "Dense, data correlation. Strict 1px borders. Use generous internal padding (p-6, p-8) for containers. Optical alignment over geometric.",
+    "surface_styles": "Grid Borders: Expose the skeleton. Container uses border-collapse style layout, items use border-r border-b. 0px or max 4px border radius."
+  },
+  "component_guidelines": {
+    "navigation": "Sticky glassmorphism header (Crystal variant). backdrop-blur-xl bg-white/70 (light) or bg-black/60 (dark) with 1px delicate bottom border. Must contain Logo, navigation links, and a tactile Theme Switcher.",
+    "buttons": "Sharp corners (rounded-none or rounded-sm). Solid brand color for primary, transparent with 1px border for secondary. explicit hover states.",
+    "inputs": "Shadcn based. Heavily customized to remove Vercel-look. Square edges, high contrast borders.",
+    "notes_display": "Bento Grid layout for notes: The Hero (Key Concepts, col-span-8), The Square (Formulas, col-span-4), The Tall (Quick Revision, col-span-4 row-span-2). Use Markdown rendering for the note content.",
+    "cards": "Flat background, 1px subtle border (border-border), no shadow by default. Hover: slight lift (-translate-y-1), subtle shadow (shadow-lg), border color darkens.",
+    "icons": "Use Phosphor Icons (@phosphor-icons/react) for a dense, highly legible dashboard look."
+  },
+  "animations": {
+    "rules": "Minimalist. Hover states, focus states, subtle entrance staggered transitions. Use framer-motion."
+  },
+  "testing": {
+    "rules": "All interactive elements MUST include data-testid attribute using kebab-case role-based names (e.g., data-testid='subject-input', data-testid='generate-btn', data-testid='theme-toggle')."
+  },
+  "media": {
+    "rules": "No generic placeholder images. Use provided assets.",
+    "image_urls": [
+      {
+        "url": "https://static.prod-images.emergentagent.com/jobs/3ba5de25-cdd1-4539-b91c-3218a68f29c3/images/a3077d24ab854e11dec29a9c6369fe64b401c9244fa326311aa6e765a1178a75.png",
+        "category": "empty_state",
+        "description": "Minimalist Swiss poster style abstract geometric composition. Use this in the main notes display area when no notes are generated yet."
+      },
+      {
+        "url": "https://static.prod-images.emergentagent.com/jobs/3ba5de25-cdd1-4539-b91c-3218a68f29c3/images/ac3251866115fe9582c790e1c86b7d58a128146c87551b50975ecc766da28ac8.png",
+        "category": "header_background",
+        "description": "Crisp architectural grid lines on warm off-white paper texture. Use as a subtle background pattern for the hero section or header if needed."
+      },
+      {
+        "url": "https://images.pexels.com/photos/8092410/pexels-photo-8092410.jpeg",
+        "category": "general_aesthetic",
+        "description": "Minimalist workspace with an open notebook. Use for the 'Saved Notes' empty state or a landing/welcome page visual."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install and setup Tailwind and Shadcn.",
+    "Apply fonts via Google Fonts in index.css (Chivo, DM Sans, JetBrains Mono).",
+    "Setup next-themes for Light/Dark mode toggling.",
+    "Implement the 'Control Room' bento grid layout for the note display.",
+    "Ensure all buttons/inputs have hover and focus states defined.",
+    "Use @phosphor-icons/react for the UI.",
+    "Use standard Markdown components to render the AI output.",
+    "Add 'data-testid' to every form input, button, and navigation item."
+  ]
+}

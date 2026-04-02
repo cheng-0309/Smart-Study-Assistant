@@ -232,6 +232,78 @@ class StudyNotesAPITester:
         )
         return success
 
+    # === HISTORY TESTS ===
+    
+    def test_get_unified_history(self):
+        """Test GET /api/history returns unified list from all collections"""
+        success, response = self.run_test(
+            "Get Unified History",
+            "GET",
+            "/history",
+            200
+        )
+        return success, response
+
+    def test_get_history_filter_notes(self):
+        """Test GET /api/history?item_type=note filters to notes only"""
+        success, response = self.run_test(
+            "Get History - Notes Filter",
+            "GET",
+            "/history?item_type=note",
+            200
+        )
+        return success, response
+
+    def test_get_history_filter_plans(self):
+        """Test GET /api/history?item_type=plan filters to plans only"""
+        success, response = self.run_test(
+            "Get History - Plans Filter",
+            "GET",
+            "/history?item_type=plan",
+            200
+        )
+        return success, response
+
+    def test_get_history_filter_practice(self):
+        """Test GET /api/history?item_type=practice filters to practice only"""
+        success, response = self.run_test(
+            "Get History - Practice Filter",
+            "GET",
+            "/history?item_type=practice",
+            200
+        )
+        return success, response
+
+    def test_delete_history_item(self, item_type, item_id):
+        """Test DELETE /api/history/{type}/{id} deletes the correct item"""
+        success, response = self.run_test(
+            f"Delete History Item ({item_type})",
+            "DELETE",
+            f"/history/{item_type}/{item_id}",
+            200
+        )
+        return success
+
+    def test_delete_invalid_history_item(self):
+        """Test DELETE /api/history/{invalid_type}/{id} returns 400"""
+        success, response = self.run_test(
+            "Delete Invalid History Item Type (400 test)",
+            "DELETE",
+            "/history/invalid_type/some-id",
+            400
+        )
+        return success
+
+    def test_delete_nonexistent_history_item(self):
+        """Test DELETE /api/history/{type}/{invalid_id} returns 404"""
+        success, response = self.run_test(
+            "Delete Nonexistent History Item (404 test)",
+            "DELETE",
+            "/history/note/invalid-id-12345",
+            404
+        )
+        return success
+
 def main():
     print("🚀 Starting Study Notes API Tests (Notes + Planner + Practice)")
     print("=" * 60)
@@ -309,6 +381,48 @@ def main():
 
     # Test 14: Error handling tests for practice tests
     tester.test_delete_nonexistent_practice()
+
+    # === HISTORY TESTS ===
+    print("\n📜 Testing History API...")
+    
+    # Test 15: Get unified history
+    print("\n📋 Testing Unified History...")
+    success, history_response = tester.test_get_unified_history()
+    if not success:
+        print("❌ Get unified history failed")
+    else:
+        print(f"✅ Found {len(history_response)} items in unified history")
+
+    # Test 16-18: Test filtering by type
+    success, notes_history = tester.test_get_history_filter_notes()
+    if success:
+        print(f"✅ Notes filter returned {len(notes_history)} items")
+    
+    success, plans_history = tester.test_get_history_filter_plans()
+    if success:
+        print(f"✅ Plans filter returned {len(plans_history)} items")
+    
+    success, practice_history = tester.test_get_history_filter_practice()
+    if success:
+        print(f"✅ Practice filter returned {len(practice_history)} items")
+
+    # Test 19-21: Test delete functionality (if we have items)
+    if history_response and len(history_response) > 0:
+        # Try to delete the first item for testing
+        first_item = history_response[0]
+        item_type = first_item.get('type')
+        item_id = first_item.get('id')
+        
+        if item_type and item_id:
+            print(f"\n🗑️  Testing delete of {item_type} item {item_id[:8]}...")
+            if tester.test_delete_history_item(item_type, item_id):
+                print(f"✅ Successfully deleted {item_type} item")
+            else:
+                print(f"❌ Failed to delete {item_type} item")
+
+    # Test error handling for history
+    tester.test_delete_invalid_history_item()
+    tester.test_delete_nonexistent_history_item()
 
     # Print final results
     print("\n" + "=" * 60)

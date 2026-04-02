@@ -1,4 +1,4 @@
-import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam } from "@phosphor-icons/react";
+import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock } from "@phosphor-icons/react";
 import { useTheme } from "../context/ThemeContext";
 import { Button } from "../components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { path: "/", label: "Notes", icon: NotePencil },
   { path: "/planner", label: "Planner", icon: CalendarDots },
   { path: "/practice", label: "Practice", icon: Exam },
+  { path: "/history", label: "History", icon: Clock },
 ];
 
 function Logo() {

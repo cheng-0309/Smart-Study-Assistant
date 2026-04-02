@@ -5,6 +5,7 @@ import { Toaster } from "./components/ui/sonner";
 import HomePage from "./pages/HomePage";
 import PlannerPage from "./pages/PlannerPage";
 import PracticePage from "./pages/PracticePage";
+import HistoryPage from "./pages/HistoryPage";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/planner" element={<PlannerPage />} />
           <Route path="/practice" element={<PracticePage />} />
+          <Route path="/history" element={<HistoryPage />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="bottom-right" richColors />

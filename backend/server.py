@@ -355,6 +355,80 @@ async def delete_practice(test_id: str):
         raise HTTPException(status_code=404, detail="Test not found")
     return {"message": "Test deleted"}
 
+# --- History Routes ---
+
+@api_router.get("/history")
+async def get_unified_history(item_type: Optional[str] = None):
+    items = []
+
+    if item_type is None or item_type == "note":
+        notes = await db.study_notes.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        for n in notes:
+            items.append({
+                "type": "note",
+                "id": n["id"],
+                "title": n["chapter"],
+                "subtitle": n["subject"],
+                "created_at": n["created_at"],
+                "preview": {
+                    "key_concepts_count": len(n.get("content", {}).get("key_concepts", [])),
+                    "has_formulas": len(n.get("content", {}).get("formulas", [])) > 0,
+                    "explanation_snippet": (n.get("content", {}).get("explanation", ""))[:120],
+                },
+                "data": n,
+            })
+
+    if item_type is None or item_type == "plan":
+        plans = await db.study_plans.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        for p in plans:
+            items.append({
+                "type": "plan",
+                "id": p["id"],
+                "title": p["topic"],
+                "subtitle": f"{p['num_days']} days · {p['hours_per_day']}h/day",
+                "created_at": p["created_at"],
+                "preview": {
+                    "total_days": p["num_days"],
+                    "hours_per_day": p["hours_per_day"],
+                    "first_day_topic": p.get("days", [{}])[0].get("topic", "") if p.get("days") else "",
+                },
+                "data": p,
+            })
+
+    if item_type is None or item_type == "practice":
+        tests = await db.practice_tests.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        for t in tests:
+            items.append({
+                "type": "practice",
+                "id": t["id"],
+                "title": t["chapter"],
+                "subtitle": t["subject"],
+                "created_at": t["created_at"],
+                "preview": {
+                    "num_questions": t["num_questions"],
+                    "first_question": t.get("questions", [{}])[0].get("question", "") if t.get("questions") else "",
+                },
+                "data": t,
+            })
+
+    items.sort(key=lambda x: x["created_at"], reverse=True)
+    return items
+
+@api_router.delete("/history/{item_type}/{item_id}")
+async def delete_history_item(item_type: str, item_id: str):
+    collection_map = {
+        "note": "study_notes",
+        "plan": "study_plans",
+        "practice": "practice_tests",
+    }
+    coll_name = collection_map.get(item_type)
+    if not coll_name:
+        raise HTTPException(status_code=400, detail="Invalid item type")
+    result = await db[coll_name].delete_one({"id": item_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {"message": "Deleted"}
+
 # Include router and middleware
 app.include_router(api_router)
 

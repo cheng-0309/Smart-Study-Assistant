@@ -32,6 +32,7 @@ Build a study assistant that generates structured study notes based on Subject a
 - Personalized Study Planner (topic + hours/day + num days)
 - Practice Test MCQs with interactive quiz, scoring, and explanations
 - Navigation between Notes, Planner, Practice pages
+- **Unified History Page** — aggregates all activity (notes, plans, practice tests) in one timeline with filter tabs (All/Notes/Plans/Practice), expandable detail views, type badges, previews, and delete
 
 ### Code Quality Improvements (Feb 2026)
 - Fixed all critical hook dependency warnings (useCallback → inline useEffect)

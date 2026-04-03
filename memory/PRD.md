@@ -1,7 +1,7 @@
 # StudyForge — PRD
 
 ## Original Problem Statement
-Build a study assistant that generates structured study notes based on Subject and Chapter input. Notes follow a specific format: Key Concepts (5-7 points), Important Formulas, Explanation (max 150 words), Quick Revision (5 points). AI-powered via Claude Sonnet 4.5. Save & history, export (PDF/text), customizable themes.
+Build a study assistant that generates structured study notes based on Subject and Chapter input. AI-powered via Claude Sonnet 4.5. Features: Notes Generator with difficulty/type controls, Study Planner, Exam Preparation Planner, Practice Tests (MCQs), Unified History, PDF/Text export, dark/light themes.
 
 ## Architecture
 - **Backend**: FastAPI + MongoDB + emergentintegrations (Claude Sonnet 4.5)
@@ -14,64 +14,50 @@ Build a study assistant that generates structured study notes based on Subject a
 - Teachers creating quick chapter summaries
 - Self-learners exploring new subjects
 
-## Core Requirements
-- AI-powered structured note generation (Subject + Chapter → Notes)
-- Save notes to database with history
-- Export notes as PDF and Text
-- Light/Dark theme toggle with persistence
-- Responsive design
-- Personalized Study Planner
-- Practice Tests (MCQs) with interactive quiz
-- Exam Preparation Planner with date-based scheduling
-- Unified History page
+## What's Been Implemented (Feb-Apr 2026)
 
-## What's Been Implemented (Feb 2026)
-- Full-stack app with FastAPI backend and React frontend
-- AI note generation using Claude Sonnet 4.5
-- MongoDB persistence for all generated content
-- Bento grid "Control Room" Swiss design for note display
-- History sidebar with select/delete functionality
-- PDF and Text export functionality
-- Light/Dark theme toggle with localStorage persistence
-- Personalized Study Planner (topic + hours/day + num days)
-- Practice Test MCQs with interactive quiz, scoring, and explanations
-- Navigation between Notes, Planner, Practice pages
-- **Unified History Page** — aggregates all activity (notes, plans, practice tests, exam plans) with filter tabs
-- **Exam Preparation Planner** — Subject, Topics (multi-add/remove), Exam Date (Calendar picker), Study Hours/Day → AI-generated day-wise schedule with priorities (high/medium/low), date labels, topic distribution, revision days
+### Core Features
+- **Enhanced Notes Generator** — Subject, Topic, Difficulty (Easy/Medium/Hard), Note Type (Quick Revision/Detailed/Exam-Focused). Output: Title, Introduction, Main Content (sectioned headings+bullets), Examples, Key Points (5-10 mandatory), Summary
+- **Personalized Study Planner** — Topic, hours/day, duration → AI-generated day-by-day plan
+- **Exam Preparation Planner** — Subject, Topics (multi), Exam Date (Calendar picker), Hours/Day → AI-generated day-wise schedule with priorities (high/medium/low)
+- **Practice Tests (MCQs)** — Subject, Chapter, # Questions → Interactive quiz with scoring & explanations
+- **Unified History** — Aggregated timeline with filter tabs (All/Notes/Plans/Exam Prep/Quizzes), expandable details, delete
+- **Export** — PDF and Text for notes
+- **Themes** — Light/Dark toggle with localStorage persistence
 
-### Code Quality Improvements (Feb 2026)
-- Fixed all critical hook dependency warnings
-- Removed all console.error statements from production code
-- Replaced array index keys with stable unique identifiers
-- Extracted nested ternary expressions into helper functions
-- Broke high-complexity components into smaller sub-components
+### Technical Quality
+- Backward-compatible note rendering (old notes with key_concepts still display)
+- Form validation on all inputs
+- Loading skeletons, toast notifications
+- Component extraction for maintainability
 
 ## API Endpoints
-- `POST /api/notes/generate` — Generate study notes
+- `POST /api/notes/generate` — Generate notes (subject, chapter, difficulty, note_type)
 - `GET /api/notes` — List all notes
 - `DELETE /api/notes/{id}` — Delete a note
 - `POST /api/planner/generate` — Generate regular study plan
-- `GET /api/planners` — List all study plans
-- `DELETE /api/planners/{id}` — Delete a plan
+- `GET /api/planners` — List plans
+- `DELETE /api/planners/{id}` — Delete plan
 - `POST /api/planner/exam/generate` — Generate exam preparation plan
-- `GET /api/exam-planners` — List all exam plans
-- `DELETE /api/exam-planners/{id}` — Delete an exam plan
+- `GET /api/exam-planners` — List exam plans
+- `DELETE /api/exam-planners/{id}` — Delete exam plan
 - `POST /api/practice/generate` — Generate practice test
-- `GET /api/practices` — List all practice tests
-- `DELETE /api/practices/{id}` — Delete a test
-- `GET /api/history` — Unified history (supports ?item_type= filter)
+- `GET /api/practices` — List tests
+- `DELETE /api/practices/{id}` — Delete test
+- `GET /api/history` — Unified history (?item_type= filter)
 - `DELETE /api/history/{type}/{id}` — Delete history item
 
 ## DB Schema
-- `study_notes`: {id, subject, chapter, content{key_concepts, formulas, explanation, quick_revision}, created_at}
+- `study_notes`: {id, subject, chapter, difficulty, note_type, content{title, introduction, main_content[{heading, points}], examples[], key_points[], summary}, created_at}
 - `study_plans`: {id, topic, hours_per_day, num_days, days[{day, topic, tasks, duration_hours}], created_at}
 - `exam_plans`: {id, subject, topics[], exam_date, hours_per_day, days_until_exam, days[{day, date, topics, tasks, duration_hours, priority}], created_at}
 - `practice_tests`: {id, subject, chapter, num_questions, questions[{question, options, correct_answer, explanation}], created_at}
 
 ## Prioritized Backlog
-### P0 (Critical) — Done
-- [x] AI note generation
-- [x] Note saving/history
+### P0 (Critical) — All Done
+- [x] AI note generation with difficulty/type controls
+- [x] Structured output (Title, Intro, Main Content, Examples, Key Points, Summary)
+- [x] Note saving/history with metadata
 - [x] Export (PDF/Text)
 - [x] Theme toggle
 - [x] Personalized Study Planner

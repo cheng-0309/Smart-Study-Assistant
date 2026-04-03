@@ -82,21 +82,16 @@ function TypeBadge({ type }) {
 }
 
 /* ---------- Note Detail ---------- */
-const DIFF_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
 const NTYPE_LABELS = { quick_revision: "Quick Revision", detailed: "Detailed", exam_focused: "Exam-Focused" };
 
 function NoteDetail({ data }) {
   const { content } = data;
-  const diffLabel = DIFF_LABELS[data.difficulty] || data.difficulty || "Medium";
   const typeLabel = NTYPE_LABELS[data.note_type] || data.note_type || "Detailed";
 
   return (
     <div className="space-y-5">
-      {/* Badges */}
+      {/* Badge */}
       <div className="flex items-center gap-2">
-        <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5">
-          {diffLabel}
-        </Badge>
         <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]">
           {typeLabel}
         </Badge>
@@ -400,9 +395,8 @@ function HistoryCard({ item, onDelete }) {
   function renderPreview() {
     if (item.type === "note") {
       const snippet = item.preview.introduction_snippet || "";
-      const diff = DIFF_LABELS[item.preview.difficulty] || item.preview.difficulty || "";
       const ntype = NTYPE_LABELS[item.preview.note_type] || item.preview.note_type || "";
-      return `${diff} · ${ntype} · ${item.preview.key_points_count || 0} key points · ${snippet.slice(0, 80)}${snippet.length > 80 ? "..." : ""}`;
+      return `${ntype} · ${item.preview.key_points_count || 0} key points · ${snippet.slice(0, 80)}${snippet.length > 80 ? "..." : ""}`;
     }
     if (item.type === "plan") {
       return `${item.preview.total_days} days · ${item.preview.hours_per_day}h/day · First: ${item.preview.first_day_topic}`;

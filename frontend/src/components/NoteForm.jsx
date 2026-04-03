@@ -11,12 +11,6 @@ import {
   SelectValue,
 } from "../components/ui/select";
 
-const DIFFICULTIES = [
-  { value: "easy", label: "Easy" },
-  { value: "medium", label: "Medium" },
-  { value: "hard", label: "Hard" },
-];
-
 const NOTE_TYPES = [
   { value: "quick_revision", label: "Quick Revision" },
   { value: "detailed", label: "Detailed" },
@@ -26,7 +20,6 @@ const NOTE_TYPES = [
 export default function NoteForm({ onGenerate, isLoading }) {
   const [subject, setSubject] = useState("");
   const [chapter, setChapter] = useState("");
-  const [difficulty, setDifficulty] = useState("medium");
   const [noteType, setNoteType] = useState("detailed");
   const [error, setError] = useState("");
 
@@ -45,7 +38,7 @@ export default function NoteForm({ onGenerate, isLoading }) {
       return;
     }
     setError("");
-    onGenerate(subject.trim(), chapter.trim(), difficulty, noteType);
+    onGenerate(subject.trim(), chapter.trim(), noteType);
   };
 
   const clearError = () => { if (error) setError(""); };
@@ -60,7 +53,7 @@ export default function NoteForm({ onGenerate, isLoading }) {
         Generate Notes
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="space-y-2">
           <Label htmlFor="subject" className="text-sm font-medium">
             Subject <span className="text-[hsl(var(--primary))]">*</span>
@@ -93,26 +86,6 @@ export default function NoteForm({ onGenerate, isLoading }) {
             }`}
             disabled={isLoading}
           />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">
-            Difficulty Level <span className="text-[hsl(var(--primary))]">*</span>
-          </Label>
-          <Select value={difficulty} onValueChange={setDifficulty} disabled={isLoading}>
-            <SelectTrigger data-testid="difficulty-select" className="rounded-sm h-11 bg-background">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="rounded-sm">
-              {DIFFICULTIES.map((d) => (
-                <SelectItem key={d.value} value={d.value}>
-                  {d.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="space-y-2">

@@ -53,7 +53,6 @@ class StudyNote(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     subject: str
     chapter: str
-    difficulty: str = "medium"
     note_type: str = "detailed"
     content: NoteContent
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -61,7 +60,6 @@ class StudyNote(BaseModel):
 class GenerateRequest(BaseModel):
     subject: str
     chapter: str
-    difficulty: str = "medium"
     note_type: str = "detailed"
 
 # --- Planner Models ---
@@ -168,34 +166,25 @@ Rules:
 - No long paragraphs
 - Return ONLY valid JSON, no markdown code blocks, no extra text"""
 
-def build_notes_user_prompt(subject: str, chapter: str, difficulty: str, note_type: str) -> str:
-    difficulty_guidance = {
-        "easy": "Use simple language, basic concepts only, beginner-friendly explanations. Avoid advanced terminology.",
-        "medium": "Balanced explanation with some examples. Cover core concepts with moderate depth.",
-        "hard": "Include deeper concepts, advanced explanations, edge cases, and nuanced details."
-    }
+def build_notes_user_prompt(subject: str, chapter: str, note_type: str) -> str:
     type_guidance = {
-        "quick_revision": "Keep notes short and crisp. Use bullet points only. Minimize explanations. Focus on quick recall.",
-        "detailed": "Provide full explanations with examples. Cover the topic comprehensively with clear structure.",
-        "exam_focused": "Focus on important concepts likely to appear in exams, key formulas, common question patterns, and frequently tested ideas."
+        "quick_revision": "Keep notes short and concise. Use bullet points. Minimal explanation. Focus on fast understanding and quick recall.",
+        "detailed": "Provide full explanations with examples. Cover the topic comprehensively with clear structure, concepts, and examples.",
+        "exam_focused": "Focus on important concepts likely to appear in exams, key formulas, common question patterns, likely questions, and flashcard-style points."
     }
 
-    diff_text = difficulty_guidance.get(difficulty, difficulty_guidance["medium"])
     type_text = type_guidance.get(note_type, type_guidance["detailed"])
 
     return f"""Generate structured study notes for:
 Subject: {subject}
 Topic: {chapter}
 
-Difficulty: {difficulty.upper()}
-→ {diff_text}
-
 Note Type: {note_type.replace('_', ' ').title()}
 → {type_text}
 
 Remember: key_points section is MANDATORY with at least 5 bullet points."""
 
-async def generate_notes_with_ai(subject: str, chapter: str, difficulty: str = "medium", note_type: str = "detailed") -> NoteContent:
+async def generate_notes_with_ai(subject: str, chapter: str, note_type: str = "detailed") -> NoteContent:
     api_key = os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
         raise HTTPException(status_code=500, detail="LLM API key not configured")
@@ -207,7 +196,7 @@ async def generate_notes_with_ai(subject: str, chapter: str, difficulty: str = "
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
     user_message = UserMessage(
-        text=build_notes_user_prompt(subject, chapter, difficulty, note_type)
+        text=build_notes_user_prompt(subject, chapter, note_type)
     )
 
     response = await chat.send_message(user_message)
@@ -402,16 +391,13 @@ async def root():
 
 @api_router.post("/notes/generate", response_model=StudyNote)
 async def generate_notes(req: GenerateRequest):
-    valid_difficulties = ["easy", "medium", "hard"]
     valid_note_types = ["quick_revision", "detailed", "exam_focused"]
-    difficulty = req.difficulty if req.difficulty in valid_difficulties else "medium"
     note_type = req.note_type if req.note_type in valid_note_types else "detailed"
 
-    content = await generate_notes_with_ai(req.subject, req.chapter, difficulty, note_type)
+    content = await generate_notes_with_ai(req.subject, req.chapter, note_type)
     note = StudyNote(
         subject=req.subject,
         chapter=req.chapter,
-        difficulty=difficulty,
         note_type=note_type,
         content=content
     )
@@ -558,7 +544,6 @@ async def get_unified_history(item_type: Optional[str] = None):
                 "subtitle": n["subject"],
                 "created_at": n["created_at"],
                 "preview": {
-                    "difficulty": n.get("difficulty", "medium"),
                     "note_type": n.get("note_type", "detailed"),
                     "key_points_count": len(n.get("content", {}).get("key_points", [])),
                     "introduction_snippet": (n.get("content", {}).get("introduction", ""))[:120],

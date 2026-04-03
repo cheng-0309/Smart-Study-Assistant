@@ -17,7 +17,7 @@ Build a study assistant that generates structured study notes based on Subject a
 ## What's Been Implemented (Feb-Apr 2026)
 
 ### Core Features
-- **Enhanced Notes Generator** — Subject, Topic, Difficulty (Easy/Medium/Hard), Note Type (Quick Revision/Detailed/Exam-Focused). Output: Title, Introduction, Main Content (sectioned headings+bullets), Examples, Key Points (5-10 mandatory), Summary
+- **Enhanced Notes Generator** — Subject, Topic, Note Type (Quick Revision/Detailed/Exam-Focused). Output: Title, Introduction, Main Content (sectioned headings+bullets), Examples, Key Points (5-10 mandatory), Summary
 - **Personalized Study Planner** — Topic, hours/day, duration → AI-generated day-by-day plan
 - **Exam Preparation Planner** — Subject, Topics (multi), Exam Date (Calendar picker), Hours/Day → AI-generated day-wise schedule with priorities (high/medium/low)
 - **Practice Tests (MCQs)** — Subject, Chapter, # Questions → Interactive quiz with scoring & explanations
@@ -32,7 +32,7 @@ Build a study assistant that generates structured study notes based on Subject a
 - Component extraction for maintainability
 
 ## API Endpoints
-- `POST /api/notes/generate` — Generate notes (subject, chapter, difficulty, note_type)
+- `POST /api/notes/generate` — Generate notes (subject, chapter, note_type)
 - `GET /api/notes` — List all notes
 - `DELETE /api/notes/{id}` — Delete a note
 - `POST /api/planner/generate` — Generate regular study plan
@@ -48,14 +48,14 @@ Build a study assistant that generates structured study notes based on Subject a
 - `DELETE /api/history/{type}/{id}` — Delete history item
 
 ## DB Schema
-- `study_notes`: {id, subject, chapter, difficulty, note_type, content{title, introduction, main_content[{heading, points}], examples[], key_points[], summary}, created_at}
+- `study_notes`: {id, subject, chapter, note_type, content{title, introduction, main_content[{heading, points}], examples[], key_points[], summary}, created_at}
 - `study_plans`: {id, topic, hours_per_day, num_days, days[{day, topic, tasks, duration_hours}], created_at}
 - `exam_plans`: {id, subject, topics[], exam_date, hours_per_day, days_until_exam, days[{day, date, topics, tasks, duration_hours, priority}], created_at}
 - `practice_tests`: {id, subject, chapter, num_questions, questions[{question, options, correct_answer, explanation}], created_at}
 
 ## Prioritized Backlog
 ### P0 (Critical) — All Done
-- [x] AI note generation with difficulty/type controls
+- [x] AI note generation with Note Type controls (Quick Revision/Detailed/Exam-Focused)
 - [x] Structured output (Title, Intro, Main Content, Examples, Key Points, Summary)
 - [x] Note saving/history with metadata
 - [x] Export (PDF/Text)

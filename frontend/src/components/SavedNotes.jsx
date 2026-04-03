@@ -20,7 +20,6 @@ function formatDate(isoStr) {
 }
 
 function NoteItem({ note, isActive, onSelect, onDelete }) {
-  const diffLabel = { easy: "E", medium: "M", hard: "H" }[note.difficulty] || "";
   const typeLabel = { quick_revision: "QR", detailed: "DT", exam_focused: "EF" }[note.note_type] || "";
 
   return (
@@ -50,11 +49,6 @@ function NoteItem({ note, isActive, onSelect, onDelete }) {
           </div>
           <p className="text-sm font-medium truncate leading-tight">{note.chapter}</p>
           <div className="flex items-center gap-1.5 mt-1">
-            {diffLabel && (
-              <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground">
-                {diffLabel}
-              </span>
-            )}
             {typeLabel && (
               <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))]">
                 {typeLabel}

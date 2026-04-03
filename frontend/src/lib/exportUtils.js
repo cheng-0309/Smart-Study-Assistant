@@ -1,18 +1,15 @@
 import { jsPDF } from "jspdf";
 
-const DIFFICULTY_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
 const TYPE_LABELS = { quick_revision: "Quick Revision", detailed: "Detailed", exam_focused: "Exam-Focused" };
 
 export function exportAsText(note) {
-  const { subject, chapter, content, difficulty, note_type } = note;
-  const diffLabel = DIFFICULTY_LABELS[difficulty] || difficulty || "Medium";
+  const { subject, chapter, content, note_type } = note;
   const typeLabel = TYPE_LABELS[note_type] || note_type || "Detailed";
 
   let text = `STUDY NOTES\n`;
   text += `${"=".repeat(50)}\n`;
   text += `Subject: ${subject}\n`;
   text += `Topic: ${chapter}\n`;
-  text += `Difficulty: ${diffLabel}\n`;
   text += `Note Type: ${typeLabel}\n`;
   text += `${"=".repeat(50)}\n\n`;
 
@@ -107,8 +104,7 @@ function writePDFParagraph(doc, text, pageWidth, y) {
 }
 
 export function exportAsPDF(note) {
-  const { subject, chapter, content, difficulty, note_type } = note;
-  const diffLabel = DIFFICULTY_LABELS[difficulty] || difficulty || "Medium";
+  const { subject, chapter, content, note_type } = note;
   const typeLabel = TYPE_LABELS[note_type] || note_type || "Detailed";
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -125,7 +121,7 @@ export function exportAsPDF(note) {
   y += 6;
   doc.text(`Topic: ${chapter}`, 20, y);
   y += 6;
-  doc.text(`Difficulty: ${diffLabel}  |  Type: ${typeLabel}`, 20, y);
+  doc.text(`Note Type: ${typeLabel}`, 20, y);
   y += 8;
   doc.setDrawColor(200);
   doc.line(20, y, pageWidth - 20, y);

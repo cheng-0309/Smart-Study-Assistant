@@ -30,7 +30,6 @@ const fadeIn = {
   }),
 };
 
-const DIFFICULTY_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
 const TYPE_LABELS = { quick_revision: "Quick Revision", detailed: "Detailed", exam_focused: "Exam-Focused" };
 
 function SectionLabel({ icon: Icon, label, number }) {
@@ -48,7 +47,6 @@ function SectionLabel({ icon: Icon, label, number }) {
 }
 
 function NoteTitle({ subject, chapter, note }) {
-  const diffLabel = DIFFICULTY_LABELS[note.difficulty] || note.difficulty;
   const typeLabel = TYPE_LABELS[note.note_type] || note.note_type;
 
   return (
@@ -69,9 +67,6 @@ function NoteTitle({ subject, chapter, note }) {
             {chapter}
           </h3>
           <div className="flex items-center gap-2 mt-2.5">
-            <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5" data-testid="difficulty-badge">
-              {diffLabel}
-            </Badge>
             <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]" data-testid="note-type-badge">
               {typeLabel}
             </Badge>

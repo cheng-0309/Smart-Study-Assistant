@@ -32,27 +32,37 @@ logger = logging.getLogger(__name__)
 
 # --- Models ---
 
+class ContentSection(BaseModel):
+    heading: str
+    points: List[str] = []
+
 class FormulaItem(BaseModel):
     formula: str
     meaning: str
 
 class NoteContent(BaseModel):
-    key_concepts: List[str] = []
-    formulas: List[FormulaItem] = []
-    explanation: str = ""
-    quick_revision: List[str] = []
+    title: str = ""
+    introduction: str = ""
+    main_content: List[ContentSection] = []
+    examples: List[str] = []
+    key_points: List[str] = []
+    summary: str = ""
 
 class StudyNote(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     subject: str
     chapter: str
+    difficulty: str = "medium"
+    note_type: str = "detailed"
     content: NoteContent
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class GenerateRequest(BaseModel):
     subject: str
     chapter: str
+    difficulty: str = "medium"
+    note_type: str = "detailed"
 
 # --- Planner Models ---
 
@@ -131,26 +141,61 @@ class ExamPlanRequest(BaseModel):
 
 # --- AI Generation ---
 
-SYSTEM_PROMPT = """You are a study assistant that generates structured study notes. When given a subject and chapter, generate notes in the following JSON format ONLY:
+SYSTEM_PROMPT = """You are a study assistant that generates structured study notes. Generate notes in the following JSON format ONLY:
 {
-  "key_concepts": ["concept1", "concept2", "concept3", "concept4", "concept5"],
-  "formulas": [{"formula": "formula_text", "meaning": "short meaning"}],
-  "explanation": "Simple and easy-to-understand explanation in max 150 words",
-  "quick_revision": ["point1", "point2", "point3", "point4", "point5"]
+  "title": "Topic Name",
+  "introduction": "2-3 line introduction to the topic",
+  "main_content": [
+    {
+      "heading": "Section Heading",
+      "points": ["Clear bullet point 1", "Clear bullet point 2", "Clear bullet point 3"]
+    }
+  ],
+  "examples": ["Example 1 with explanation", "Example 2 with explanation"],
+  "key_points": ["Key point 1", "Key point 2", "Key point 3", "Key point 4", "Key point 5"],
+  "summary": "2-3 line summary of the topic"
 }
 
 Rules:
-- key_concepts: 5-7 clear bullet points
-- formulas: Include formulas with short meaning. If not applicable for the subject, return empty array []
-- explanation: Simple, easy-to-understand, max 150 words
-- quick_revision: Exactly 5 one-line revision points
-- Keep language simple
-- Avoid long paragraphs
-- Be concise and structured
-- Do not add unnecessary information
+- title: The topic name as a clear heading
+- introduction: 2-3 concise sentences introducing the topic
+- main_content: 2-5 sections with clear headings and 2-5 bullet points each
+- examples: 1-4 practical examples (if applicable to the subject, otherwise empty array [])
+- key_points: MANDATORY. Must contain 5-10 short, exam-relevant bullet points highlighting the most important ideas
+- summary: 2-3 concise sentences wrapping up the topic
+- Keep language simple and readable
+- Use clear headings and short bullet points
+- No long paragraphs
 - Return ONLY valid JSON, no markdown code blocks, no extra text"""
 
-async def generate_notes_with_ai(subject: str, chapter: str) -> NoteContent:
+def build_notes_user_prompt(subject: str, chapter: str, difficulty: str, note_type: str) -> str:
+    difficulty_guidance = {
+        "easy": "Use simple language, basic concepts only, beginner-friendly explanations. Avoid advanced terminology.",
+        "medium": "Balanced explanation with some examples. Cover core concepts with moderate depth.",
+        "hard": "Include deeper concepts, advanced explanations, edge cases, and nuanced details."
+    }
+    type_guidance = {
+        "quick_revision": "Keep notes short and crisp. Use bullet points only. Minimize explanations. Focus on quick recall.",
+        "detailed": "Provide full explanations with examples. Cover the topic comprehensively with clear structure.",
+        "exam_focused": "Focus on important concepts likely to appear in exams, key formulas, common question patterns, and frequently tested ideas."
+    }
+
+    diff_text = difficulty_guidance.get(difficulty, difficulty_guidance["medium"])
+    type_text = type_guidance.get(note_type, type_guidance["detailed"])
+
+    return f"""Generate structured study notes for:
+Subject: {subject}
+Topic: {chapter}
+
+Difficulty: {difficulty.upper()}
+→ {diff_text}
+
+Note Type: {note_type.replace('_', ' ').title()}
+→ {type_text}
+
+Remember: key_points section is MANDATORY with at least 5 bullet points."""
+
+async def generate_notes_with_ai(subject: str, chapter: str, difficulty: str = "medium", note_type: str = "detailed") -> NoteContent:
     api_key = os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
         raise HTTPException(status_code=500, detail="LLM API key not configured")
@@ -162,7 +207,7 @@ async def generate_notes_with_ai(subject: str, chapter: str) -> NoteContent:
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
     user_message = UserMessage(
-        text=f"Generate structured study notes for:\nSubject: {subject}\nChapter: {chapter}"
+        text=build_notes_user_prompt(subject, chapter, difficulty, note_type)
     )
 
     response = await chat.send_message(user_message)
@@ -170,7 +215,6 @@ async def generate_notes_with_ai(subject: str, chapter: str) -> NoteContent:
 
     # Parse JSON from response
     try:
-        # Clean response - remove markdown code blocks if present
         cleaned = response.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.split("\n", 1)[1]
@@ -358,10 +402,17 @@ async def root():
 
 @api_router.post("/notes/generate", response_model=StudyNote)
 async def generate_notes(req: GenerateRequest):
-    content = await generate_notes_with_ai(req.subject, req.chapter)
+    valid_difficulties = ["easy", "medium", "hard"]
+    valid_note_types = ["quick_revision", "detailed", "exam_focused"]
+    difficulty = req.difficulty if req.difficulty in valid_difficulties else "medium"
+    note_type = req.note_type if req.note_type in valid_note_types else "detailed"
+
+    content = await generate_notes_with_ai(req.subject, req.chapter, difficulty, note_type)
     note = StudyNote(
         subject=req.subject,
         chapter=req.chapter,
+        difficulty=difficulty,
+        note_type=note_type,
         content=content
     )
     doc = note.model_dump()
@@ -507,9 +558,11 @@ async def get_unified_history(item_type: Optional[str] = None):
                 "subtitle": n["subject"],
                 "created_at": n["created_at"],
                 "preview": {
-                    "key_concepts_count": len(n.get("content", {}).get("key_concepts", [])),
-                    "has_formulas": len(n.get("content", {}).get("formulas", [])) > 0,
-                    "explanation_snippet": (n.get("content", {}).get("explanation", ""))[:120],
+                    "difficulty": n.get("difficulty", "medium"),
+                    "note_type": n.get("note_type", "detailed"),
+                    "key_points_count": len(n.get("content", {}).get("key_points", [])),
+                    "introduction_snippet": (n.get("content", {}).get("introduction", ""))[:120],
+                    "sections_count": len(n.get("content", {}).get("main_content", [])),
                 },
                 "data": n,
             })

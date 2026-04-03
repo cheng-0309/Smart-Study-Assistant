@@ -20,6 +20,10 @@ import {
   Fire,
   Minus,
   ArrowDown,
+  Star,
+  TextAlignLeft,
+  Code,
+  Article,
 } from "@phosphor-icons/react";
 import Header from "../components/Header";
 import { Button } from "../components/ui/button";
@@ -78,62 +82,129 @@ function TypeBadge({ type }) {
 }
 
 /* ---------- Note Detail ---------- */
+const DIFF_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
+const NTYPE_LABELS = { quick_revision: "Quick Revision", detailed: "Detailed", exam_focused: "Exam-Focused" };
+
 function NoteDetail({ data }) {
   const { content } = data;
+  const diffLabel = DIFF_LABELS[data.difficulty] || data.difficulty || "Medium";
+  const typeLabel = NTYPE_LABELS[data.note_type] || data.note_type || "Detailed";
+
   return (
     <div className="space-y-5">
-      <div>
-        <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
-          <Lightbulb weight="bold" className="w-3 h-3" /> Key Concepts
-        </div>
-        <ul className="space-y-2">
-          {content.key_concepts.map((c, i) => (
-            <li key={`kc-${c.slice(0, 15)}-${i}`} className="flex items-start gap-2.5 text-sm">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
-                {i + 1}
-              </span>
-              {c}
-            </li>
-          ))}
-        </ul>
+      {/* Badges */}
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5">
+          {diffLabel}
+        </Badge>
+        <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]">
+          {typeLabel}
+        </Badge>
       </div>
 
-      {content.formulas.length > 0 && (
+      {/* Introduction */}
+      {content.introduction && (
         <div>
           <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
-            <MathOperations weight="bold" className="w-3 h-3" /> Formulas
+            <Article weight="bold" className="w-3 h-3" /> Introduction
           </div>
-          <div className="space-y-2">
-            {content.formulas.map((f) => (
-              <div key={`f-${f.formula}`} className="p-3 border border-border bg-background rounded-sm">
-                <code className="text-xs font-bold font-mono text-[hsl(var(--primary))]">{f.formula}</code>
-                <span className="text-xs text-muted-foreground ml-2">— {f.meaning}</span>
+          <p className="text-sm leading-relaxed">{content.introduction}</p>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {content.main_content && content.main_content.length > 0 && (
+        <div>
+          <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
+            <TextAlignLeft weight="bold" className="w-3 h-3" /> Main Content
+          </div>
+          <div className="space-y-4">
+            {content.main_content.map((section, si) => (
+              <div key={`hmc-${si}`}>
+                <h4 className="text-sm font-bold mb-1.5">{section.heading}</h4>
+                <ul className="space-y-1.5 pl-2">
+                  {section.points.map((p, pi) => (
+                    <li key={`hmp-${si}-${pi}`} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary)/0.4)] mt-2 shrink-0" />
+                      {p}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <div>
-        <div className="overline text-muted-foreground mb-2.5">Explanation</div>
-        <p className="text-sm leading-relaxed">{content.explanation}</p>
-      </div>
-
-      <div>
-        <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
-          <ListChecks weight="bold" className="w-3 h-3" /> Quick Revision
+      {/* Examples */}
+      {content.examples && content.examples.length > 0 && (
+        <div>
+          <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
+            <Code weight="bold" className="w-3 h-3" /> Examples
+          </div>
+          <div className="space-y-2">
+            {content.examples.map((ex, i) => (
+              <div key={`hex-${i}`} className="p-3 border border-border bg-background rounded-sm text-sm">
+                <span className="font-mono text-[hsl(var(--primary))] mr-1.5">{i + 1}.</span> {ex}
+              </div>
+            ))}
+          </div>
         </div>
-        <ol className="space-y-1.5">
-          {content.quick_revision.map((r, i) => (
-            <li key={`qr-${r.slice(0, 15)}-${i}`} className="text-sm flex items-start gap-2.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              {r}
-            </li>
-          ))}
-        </ol>
-      </div>
+      )}
+
+      {/* Key Points */}
+      {content.key_points && content.key_points.length > 0 && (
+        <div>
+          <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
+            <Star weight="bold" className="w-3 h-3" /> Key Points
+          </div>
+          <ul className="space-y-2">
+            {content.key_points.map((kp, i) => (
+              <li key={`hkp-${kp.slice(0, 15)}-${i}`} className="flex items-start gap-2.5 text-sm">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+                  {i + 1}
+                </span>
+                {kp}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Summary */}
+      {content.summary && (
+        <div>
+          <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
+            <ListChecks weight="bold" className="w-3 h-3" /> Summary
+          </div>
+          <p className="text-sm leading-relaxed">{content.summary}</p>
+        </div>
+      )}
+
+      {/* Backward compat: old notes with key_concepts/explanation/formulas/quick_revision */}
+      {!content.key_points && content.key_concepts && content.key_concepts.length > 0 && (
+        <div>
+          <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
+            <Lightbulb weight="bold" className="w-3 h-3" /> Key Concepts
+          </div>
+          <ul className="space-y-2">
+            {content.key_concepts.map((c, i) => (
+              <li key={`kc-${i}`} className="flex items-start gap-2.5 text-sm">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+                  {i + 1}
+                </span>
+                {c}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {!content.introduction && content.explanation && (
+        <div>
+          <div className="overline text-muted-foreground mb-2.5">Explanation</div>
+          <p className="text-sm leading-relaxed">{content.explanation}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -328,8 +399,10 @@ function HistoryCard({ item, onDelete }) {
 
   function renderPreview() {
     if (item.type === "note") {
-      const snippet = item.preview.explanation_snippet || "";
-      return `${item.preview.key_concepts_count} concepts · ${item.preview.has_formulas ? "Includes formulas" : "No formulas"} · ${snippet.slice(0, 80)}${snippet.length > 80 ? "..." : ""}`;
+      const snippet = item.preview.introduction_snippet || "";
+      const diff = DIFF_LABELS[item.preview.difficulty] || item.preview.difficulty || "";
+      const ntype = NTYPE_LABELS[item.preview.note_type] || item.preview.note_type || "";
+      return `${diff} · ${ntype} · ${item.preview.key_points_count || 0} key points · ${snippet.slice(0, 80)}${snippet.length > 80 ? "..." : ""}`;
     }
     if (item.type === "plan") {
       return `${item.preview.total_days} days · ${item.preview.hours_per_day}h/day · First: ${item.preview.first_day_topic}`;

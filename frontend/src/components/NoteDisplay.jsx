@@ -4,13 +4,15 @@ import {
   FileText,
   FilePdf,
   Lightbulb,
-  MathOperations,
   Article,
   ListChecks,
   BookOpenText,
-  Separator,
+  Star,
+  TextAlignLeft,
+  Code,
 } from "@phosphor-icons/react";
 import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +30,9 @@ const fadeIn = {
   }),
 };
 
+const DIFFICULTY_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
+const TYPE_LABELS = { quick_revision: "Quick Revision", detailed: "Detailed", exam_focused: "Exam-Focused" };
+
 function SectionLabel({ icon: Icon, label, number }) {
   return (
     <div className="flex items-center gap-3 mb-4">
@@ -43,6 +48,9 @@ function SectionLabel({ icon: Icon, label, number }) {
 }
 
 function NoteTitle({ subject, chapter, note }) {
+  const diffLabel = DIFFICULTY_LABELS[note.difficulty] || note.difficulty;
+  const typeLabel = TYPE_LABELS[note.note_type] || note.note_type;
+
   return (
     <div className="border border-border bg-card p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -50,7 +58,7 @@ function NoteTitle({ subject, chapter, note }) {
           <div className="flex items-center gap-2 mb-2">
             <BookOpenText weight="bold" className="w-5 h-5 text-[hsl(var(--primary))]" />
             <h2 className="text-lg font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
-              Notes
+              {note.content.title || "Notes"}
             </h2>
           </div>
           <div className="overline text-muted-foreground mb-1">{subject}</div>
@@ -60,6 +68,14 @@ function NoteTitle({ subject, chapter, note }) {
           >
             {chapter}
           </h3>
+          <div className="flex items-center gap-2 mt-2.5">
+            <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5" data-testid="difficulty-badge">
+              {diffLabel}
+            </Badge>
+            <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]" data-testid="note-type-badge">
+              {typeLabel}
+            </Badge>
+          </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -82,60 +98,74 @@ function NoteTitle({ subject, chapter, note }) {
   );
 }
 
-function OverviewSection({ explanation }) {
+function IntroductionSection({ text }) {
+  if (!text) return null;
   return (
-    <motion.div custom={0} initial="hidden" animate="visible" variants={fadeIn} className="bento-full border border-border bg-card p-6" data-testid="overview-section">
-      <SectionLabel icon={Article} label="Overview" number="01" />
-      <p className="text-sm leading-relaxed text-foreground">{explanation}</p>
+    <motion.div custom={0} initial="hidden" animate="visible" variants={fadeIn} className="bento-full border border-border bg-card p-6" data-testid="introduction-section">
+      <SectionLabel icon={Article} label="Introduction" number="01" />
+      <p className="text-sm leading-relaxed text-foreground">{text}</p>
     </motion.div>
   );
 }
 
-function KeyConceptsSection({ concepts }) {
+function MainContentSection({ sections }) {
+  if (!sections || sections.length === 0) return null;
   return (
-    <motion.div custom={1} initial="hidden" animate="visible" variants={fadeIn} className="bento-hero border border-border bg-card p-6" data-testid="key-concepts-section">
-      <SectionLabel icon={Lightbulb} label="Key Concepts" number="02" />
-      <ul className="space-y-2.5">
-        {concepts.map((concept, i) => (
-          <li key={`concept-${concept.slice(0, 20)}-${i}`} className="flex items-start gap-3 text-sm leading-relaxed">
-            <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
-              {i + 1}
-            </span>
-            {concept}
-          </li>
+    <motion.div custom={1} initial="hidden" animate="visible" variants={fadeIn} className="bento-hero border border-border bg-card p-6" data-testid="main-content-section">
+      <SectionLabel icon={TextAlignLeft} label="Main Content" number="02" />
+      <div className="space-y-5">
+        {sections.map((section, si) => (
+          <div key={`section-${section.heading}-${si}`}>
+            <h4 className="text-sm font-bold mb-2.5 flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] shrink-0">
+                {String(si + 1).padStart(2, "0")}
+              </span>
+              {section.heading}
+            </h4>
+            <ul className="space-y-2 pl-7">
+              {section.points.map((point, pi) => (
+                <li key={`pt-${si}-${pi}`} className="flex items-start gap-2.5 text-sm leading-relaxed text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary)/0.4)] mt-2 shrink-0" />
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
     </motion.div>
   );
 }
 
-function FormulasSection({ formulas }) {
+function ExamplesSection({ examples }) {
+  if (!examples || examples.length === 0) return null;
   return (
-    <motion.div custom={2} initial="hidden" animate="visible" variants={fadeIn} className="bento-square border border-border bg-card p-6" data-testid="formulas-section">
-      <SectionLabel icon={MathOperations} label="Important Formulas" number="03" />
-      {formulas.length > 0 ? (
-        <div className="space-y-3">
-          {formulas.map((f) => (
-            <div key={`formula-${f.formula}`} className="border border-border p-3 bg-background rounded-sm">
-              <code className="text-sm font-bold font-mono text-[hsl(var(--primary))] block mb-1">{f.formula}</code>
-              <span className="text-xs text-muted-foreground">{f.meaning}</span>
+    <motion.div custom={2} initial="hidden" animate="visible" variants={fadeIn} className="bento-square border border-border bg-card p-6" data-testid="examples-section">
+      <SectionLabel icon={Code} label="Examples" number="03" />
+      <div className="space-y-3">
+        {examples.map((ex, i) => (
+          <div key={`example-${i}`} className="border border-border p-3 bg-background rounded-sm">
+            <div className="flex items-start gap-2.5 text-sm">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+                {i + 1}
+              </span>
+              <span className="leading-relaxed">{ex}</span>
             </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground italic">No formulas for this chapter.</p>
-      )}
+          </div>
+        ))}
+      </div>
     </motion.div>
   );
 }
 
-function QuickRevisionSection({ points }) {
+function KeyPointsSection({ points }) {
+  if (!points || points.length === 0) return null;
   return (
-    <motion.div custom={3} initial="hidden" animate="visible" variants={fadeIn} className="bento-full border border-border bg-card p-6" data-testid="quick-revision-section">
-      <SectionLabel icon={ListChecks} label="Quick Revision" number="04" />
+    <motion.div custom={3} initial="hidden" animate="visible" variants={fadeIn} className="bento-full border border-border bg-card p-6" data-testid="key-points-section">
+      <SectionLabel icon={Star} label="Key Points" number="04" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
         {points.map((point, i) => (
-          <div key={`rev-${point.slice(0, 20)}-${i}`} className="flex items-start gap-3 text-sm leading-relaxed p-2 rounded-sm hover:bg-muted/30 transition-colors">
+          <div key={`kp-${point.slice(0, 20)}-${i}`} className="flex items-start gap-3 text-sm leading-relaxed p-2 rounded-sm hover:bg-muted/30 transition-colors">
             <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
               {String(i + 1).padStart(2, "0")}
             </span>
@@ -143,6 +173,16 @@ function QuickRevisionSection({ points }) {
           </div>
         ))}
       </div>
+    </motion.div>
+  );
+}
+
+function SummarySection({ text }) {
+  if (!text) return null;
+  return (
+    <motion.div custom={4} initial="hidden" animate="visible" variants={fadeIn} className="bento-full border border-border bg-card p-6" data-testid="summary-section">
+      <SectionLabel icon={ListChecks} label="Summary" number="05" />
+      <p className="text-sm leading-relaxed text-foreground">{text}</p>
     </motion.div>
   );
 }
@@ -157,10 +197,11 @@ export default function NoteDisplay({ note }) {
       <NoteTitle subject={subject} chapter={chapter} note={note} />
 
       <div className="bento-grid">
-        <OverviewSection explanation={content.explanation} />
-        <KeyConceptsSection concepts={content.key_concepts} />
-        <FormulasSection formulas={content.formulas} />
-        <QuickRevisionSection points={content.quick_revision} />
+        <IntroductionSection text={content.introduction} />
+        <MainContentSection sections={content.main_content} />
+        <ExamplesSection examples={content.examples} />
+        <KeyPointsSection points={content.key_points} />
+        <SummarySection text={content.summary} />
       </div>
     </div>
   );

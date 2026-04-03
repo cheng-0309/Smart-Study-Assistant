@@ -3,16 +3,37 @@ import { Lightning, Spinner, WarningCircle } from "@phosphor-icons/react";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+
+const DIFFICULTIES = [
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+];
+
+const NOTE_TYPES = [
+  { value: "quick_revision", label: "Quick Revision" },
+  { value: "detailed", label: "Detailed" },
+  { value: "exam_focused", label: "Exam-Focused" },
+];
 
 export default function NoteForm({ onGenerate, isLoading }) {
   const [subject, setSubject] = useState("");
   const [chapter, setChapter] = useState("");
+  const [difficulty, setDifficulty] = useState("medium");
+  const [noteType, setNoteType] = useState("detailed");
   const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!subject.trim() && !chapter.trim()) {
-      setError("Please enter subject and chapter");
+      setError("Please enter subject and topic");
       return;
     }
     if (!subject.trim()) {
@@ -20,11 +41,11 @@ export default function NoteForm({ onGenerate, isLoading }) {
       return;
     }
     if (!chapter.trim()) {
-      setError("Please enter a chapter");
+      setError("Please enter a topic");
       return;
     }
     setError("");
-    onGenerate(subject.trim(), chapter.trim());
+    onGenerate(subject.trim(), chapter.trim(), difficulty, noteType);
   };
 
   const clearError = () => { if (error) setError(""); };
@@ -59,7 +80,7 @@ export default function NoteForm({ onGenerate, isLoading }) {
 
         <div className="space-y-2">
           <Label htmlFor="chapter" className="text-sm font-medium">
-            Chapter <span className="text-[hsl(var(--primary))]">*</span>
+            Topic <span className="text-[hsl(var(--primary))]">*</span>
           </Label>
           <Input
             data-testid="chapter-input"
@@ -72,6 +93,44 @@ export default function NoteForm({ onGenerate, isLoading }) {
             }`}
             disabled={isLoading}
           />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">
+            Difficulty Level <span className="text-[hsl(var(--primary))]">*</span>
+          </Label>
+          <Select value={difficulty} onValueChange={setDifficulty} disabled={isLoading}>
+            <SelectTrigger data-testid="difficulty-select" className="rounded-sm h-11 bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-sm">
+              {DIFFICULTIES.map((d) => (
+                <SelectItem key={d.value} value={d.value}>
+                  {d.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">
+            Note Type <span className="text-[hsl(var(--primary))]">*</span>
+          </Label>
+          <Select value={noteType} onValueChange={setNoteType} disabled={isLoading}>
+            <SelectTrigger data-testid="note-type-select" className="rounded-sm h-11 bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-sm">
+              {NOTE_TYPES.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

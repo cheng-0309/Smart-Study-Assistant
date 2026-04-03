@@ -20,6 +20,9 @@ function formatDate(isoStr) {
 }
 
 function NoteItem({ note, isActive, onSelect, onDelete }) {
+  const diffLabel = { easy: "E", medium: "M", hard: "H" }[note.difficulty] || "";
+  const typeLabel = { quick_revision: "QR", detailed: "DT", exam_focused: "EF" }[note.note_type] || "";
+
   return (
     <motion.div
       key={note.id}
@@ -46,9 +49,21 @@ function NoteItem({ note, isActive, onSelect, onDelete }) {
             </span>
           </div>
           <p className="text-sm font-medium truncate leading-tight">{note.chapter}</p>
-          <span className="font-mono text-[10px] text-muted-foreground mt-1 block">
-            {formatDate(note.created_at)}
-          </span>
+          <div className="flex items-center gap-1.5 mt-1">
+            {diffLabel && (
+              <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground">
+                {diffLabel}
+              </span>
+            )}
+            {typeLabel && (
+              <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))]">
+                {typeLabel}
+              </span>
+            )}
+            <span className="font-mono text-[10px] text-muted-foreground">
+              {formatDate(note.created_at)}
+            </span>
+          </div>
         </div>
 
         <TooltipProvider delayDuration={200}>

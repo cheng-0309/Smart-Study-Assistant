@@ -77,10 +77,15 @@ export default function HomePage() {
     loadNotes();
   }, []);
 
-  const handleGenerate = async (subject, chapter) => {
+  const handleGenerate = async (subject, chapter, difficulty, noteType) => {
     setIsLoading(true);
     try {
-      const res = await axios.post(`${API}/notes/generate`, { subject, chapter });
+      const res = await axios.post(`${API}/notes/generate`, {
+        subject,
+        chapter,
+        difficulty,
+        note_type: noteType,
+      });
       setActiveNote(res.data);
       setNotes((prev) => [res.data, ...prev]);
       toast.success("Notes generated successfully!");

@@ -1,34 +1,61 @@
 import { jsPDF } from "jspdf";
 
+const DIFFICULTY_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
+const TYPE_LABELS = { quick_revision: "Quick Revision", detailed: "Detailed", exam_focused: "Exam-Focused" };
+
 export function exportAsText(note) {
-  const { subject, chapter, content } = note;
+  const { subject, chapter, content, difficulty, note_type } = note;
+  const diffLabel = DIFFICULTY_LABELS[difficulty] || difficulty || "Medium";
+  const typeLabel = TYPE_LABELS[note_type] || note_type || "Detailed";
+
   let text = `STUDY NOTES\n`;
   text += `${"=".repeat(50)}\n`;
   text += `Subject: ${subject}\n`;
-  text += `Chapter: ${chapter}\n`;
+  text += `Topic: ${chapter}\n`;
+  text += `Difficulty: ${diffLabel}\n`;
+  text += `Note Type: ${typeLabel}\n`;
   text += `${"=".repeat(50)}\n\n`;
 
-  text += `KEY CONCEPTS\n${"-".repeat(30)}\n`;
-  content.key_concepts.forEach((c, i) => {
-    text += `  ${i + 1}. ${c}\n`;
-  });
-
-  text += `\nIMPORTANT FORMULAS\n${"-".repeat(30)}\n`;
-  if (content.formulas.length > 0) {
-    content.formulas.forEach((f) => {
-      text += `  ${f.formula}  —  ${f.meaning}\n`;
-    });
-  } else {
-    text += `  (No formulas for this chapter)\n`;
+  if (content.title) {
+    text += `${content.title}\n${"-".repeat(30)}\n\n`;
   }
 
-  text += `\nEXPLANATION\n${"-".repeat(30)}\n`;
-  text += `  ${content.explanation}\n`;
+  if (content.introduction) {
+    text += `INTRODUCTION\n${"-".repeat(30)}\n`;
+    text += `  ${content.introduction}\n\n`;
+  }
 
-  text += `\nQUICK REVISION\n${"-".repeat(30)}\n`;
-  content.quick_revision.forEach((r, i) => {
-    text += `  ${i + 1}. ${r}\n`;
-  });
+  if (content.main_content && content.main_content.length > 0) {
+    text += `MAIN CONTENT\n${"-".repeat(30)}\n`;
+    content.main_content.forEach((section, i) => {
+      text += `\n  ${i + 1}. ${section.heading}\n`;
+      section.points.forEach((p) => {
+        text += `     - ${p}\n`;
+      });
+    });
+    text += `\n`;
+  }
+
+  if (content.examples && content.examples.length > 0) {
+    text += `EXAMPLES\n${"-".repeat(30)}\n`;
+    content.examples.forEach((ex, i) => {
+      text += `  ${i + 1}. ${ex}\n`;
+    });
+    text += `\n`;
+  }
+
+  if (content.key_points && content.key_points.length > 0) {
+    text += `KEY POINTS\n${"-".repeat(30)}\n`;
+    content.key_points.forEach((kp, i) => {
+      text += `  ${i + 1}. ${kp}\n`;
+    });
+    text += `\n`;
+  }
+
+  if (content.summary) {
+    text += `SUMMARY\n${"-".repeat(30)}\n`;
+    text += `  ${content.summary}\n`;
+  }
 
   downloadBlob(new Blob([text], { type: "text/plain" }), `${subject} - ${chapter}.txt`);
 }
@@ -70,8 +97,19 @@ function writePDFBulletList(doc, items, pageWidth, y) {
   return y;
 }
 
+function writePDFParagraph(doc, text, pageWidth, y) {
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const lines = doc.splitTextToSize(text, pageWidth - 45);
+  y = ensurePageSpace(doc, y, lines.length * 5);
+  doc.text(lines, 25, y);
+  return y + lines.length * 5 + 4;
+}
+
 export function exportAsPDF(note) {
-  const { subject, chapter, content } = note;
+  const { subject, chapter, content, difficulty, note_type } = note;
+  const diffLabel = DIFFICULTY_LABELS[difficulty] || difficulty || "Medium";
+  const typeLabel = TYPE_LABELS[note_type] || note_type || "Detailed";
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 20;
@@ -79,47 +117,61 @@ export function exportAsPDF(note) {
   // Title
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("STUDY NOTES", pageWidth / 2, y, { align: "center" });
+  doc.text(content.title || "STUDY NOTES", pageWidth / 2, y, { align: "center" });
   y += 10;
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.text(`Subject: ${subject}`, 20, y);
   y += 6;
-  doc.text(`Chapter: ${chapter}`, 20, y);
-  y += 10;
+  doc.text(`Topic: ${chapter}`, 20, y);
+  y += 6;
+  doc.text(`Difficulty: ${diffLabel}  |  Type: ${typeLabel}`, 20, y);
+  y += 8;
   doc.setDrawColor(200);
   doc.line(20, y, pageWidth - 20, y);
   y += 8;
 
-  // Key Concepts
-  y = writePDFHeading(doc, "Key Concepts", y);
-  y = writePDFBulletList(doc, content.key_concepts.map((c) => `\u2022 ${c}`), pageWidth, y);
-  y += 4;
-
-  // Formulas
-  y = writePDFHeading(doc, "Important Formulas", y);
-  if (content.formulas.length > 0) {
-    y = writePDFBulletList(doc, content.formulas.map((f) => `${f.formula}  \u2014  ${f.meaning}`), pageWidth, y);
-  } else {
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text("(No formulas for this chapter)", 25, y);
-    y += 7;
+  // Introduction
+  if (content.introduction) {
+    y = writePDFHeading(doc, "Introduction", y);
+    y = writePDFParagraph(doc, content.introduction, pageWidth, y);
+    y += 2;
   }
-  y += 4;
 
-  // Explanation
-  y = writePDFHeading(doc, "Explanation", y);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  const expLines = doc.splitTextToSize(content.explanation, pageWidth - 45);
-  y = ensurePageSpace(doc, y, expLines.length * 5);
-  doc.text(expLines, 25, y);
-  y += expLines.length * 5 + 6;
+  // Main Content
+  if (content.main_content && content.main_content.length > 0) {
+    y = writePDFHeading(doc, "Main Content", y);
+    for (const section of content.main_content) {
+      y = ensurePageSpace(doc, y, 12);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(section.heading, 25, y);
+      y += 6;
+      y = writePDFBulletList(doc, section.points.map((p) => `\u2022 ${p}`), pageWidth, y);
+      y += 2;
+    }
+    y += 2;
+  }
 
-  // Quick Revision
-  y = writePDFHeading(doc, "Quick Revision", y);
-  y = writePDFBulletList(doc, content.quick_revision.map((r, i) => `${i + 1}. ${r}`), pageWidth, y);
+  // Examples
+  if (content.examples && content.examples.length > 0) {
+    y = writePDFHeading(doc, "Examples", y);
+    y = writePDFBulletList(doc, content.examples.map((e, i) => `${i + 1}. ${e}`), pageWidth, y);
+    y += 4;
+  }
+
+  // Key Points
+  if (content.key_points && content.key_points.length > 0) {
+    y = writePDFHeading(doc, "Key Points", y);
+    y = writePDFBulletList(doc, content.key_points.map((kp, i) => `${i + 1}. ${kp}`), pageWidth, y);
+    y += 4;
+  }
+
+  // Summary
+  if (content.summary) {
+    y = writePDFHeading(doc, "Summary", y);
+    y = writePDFParagraph(doc, content.summary, pageWidth, y);
+  }
 
   doc.save(`${subject} - ${chapter}.pdf`);
 }

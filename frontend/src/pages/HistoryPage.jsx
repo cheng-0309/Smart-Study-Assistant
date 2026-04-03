@@ -7,8 +7,8 @@ import {
   CalendarDots,
   Exam,
   Trash,
-  CaretDown,
-  CaretUp,
+  Eye,
+  EyeSlash,
   Clock,
   Lightbulb,
   MathOperations,
@@ -20,38 +20,50 @@ import Header from "../components/Header";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { ScrollArea } from "../components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../components/ui/tooltip";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const TYPE_CONFIG = {
-  note: { label: "Note", icon: NotePencil, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },
-  plan: { label: "Plan", icon: CalendarDots, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-  practice: { label: "Practice", icon: Exam, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  note: { label: "Notes", icon: NotePencil, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+  plan: { label: "Study Plan", icon: CalendarDots, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+  practice: { label: "Quiz", icon: Exam, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
 };
 
 const FILTERS = [
   { key: null, label: "All" },
   { key: "note", label: "Notes" },
   { key: "plan", label: "Plans" },
-  { key: "practice", label: "Practice" },
+  { key: "practice", label: "Quizzes" },
 ];
 
-function formatDate(isoStr) {
+function formatTimestamp(isoStr) {
   const d = new Date(isoStr);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHrs / 24);
+
+  const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHrs < 24) return `${diffHrs}h ago · ${timeStr}`;
+  if (diffDays < 7) return `${diffDays}d ago · ${timeStr}`;
+  return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · ${timeStr}`;
 }
 
 function TypeBadge({ type }) {
   const config = TYPE_CONFIG[type];
   const Icon = config.icon;
   return (
-    <Badge variant="outline" className={`rounded-sm gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${config.color} ${config.bg} ${config.border}`}>
+    <Badge variant="outline" className={`rounded-sm gap-1.5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${config.color} ${config.bg} ${config.border}`}>
       <Icon weight="bold" className="w-3 h-3" />
       {config.label}
     </Badge>
@@ -62,15 +74,17 @@ function TypeBadge({ type }) {
 function NoteDetail({ data }) {
   const { content } = data;
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
-        <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2">
+        <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
           <Lightbulb weight="bold" className="w-3 h-3" /> Key Concepts
         </div>
-        <ul className="space-y-1.5">
+        <ul className="space-y-2">
           {content.key_concepts.map((c, i) => (
-            <li key={`kc-${c.slice(0, 15)}-${i}`} className="flex items-start gap-2 text-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary))] mt-1.5 shrink-0" />
+            <li key={`kc-${c.slice(0, 15)}-${i}`} className="flex items-start gap-2.5 text-sm">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+                {i + 1}
+              </span>
               {c}
             </li>
           ))}
@@ -79,14 +93,14 @@ function NoteDetail({ data }) {
 
       {content.formulas.length > 0 && (
         <div>
-          <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2">
+          <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
             <MathOperations weight="bold" className="w-3 h-3" /> Formulas
           </div>
           <div className="space-y-2">
             {content.formulas.map((f) => (
-              <div key={`f-${f.formula}`} className="p-2 border border-border bg-background rounded-sm">
+              <div key={`f-${f.formula}`} className="p-3 border border-border bg-background rounded-sm">
                 <code className="text-xs font-bold font-mono text-[hsl(var(--primary))]">{f.formula}</code>
-                <span className="text-xs text-muted-foreground ml-2">{f.meaning}</span>
+                <span className="text-xs text-muted-foreground ml-2">— {f.meaning}</span>
               </div>
             ))}
           </div>
@@ -94,18 +108,20 @@ function NoteDetail({ data }) {
       )}
 
       <div>
-        <div className="overline text-muted-foreground mb-2">Explanation</div>
+        <div className="overline text-muted-foreground mb-2.5">Explanation</div>
         <p className="text-sm leading-relaxed">{content.explanation}</p>
       </div>
 
       <div>
-        <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2">
+        <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2.5">
           <ListChecks weight="bold" className="w-3 h-3" /> Quick Revision
         </div>
-        <ol className="space-y-1">
+        <ol className="space-y-1.5">
           {content.quick_revision.map((r, i) => (
-            <li key={`qr-${r.slice(0, 15)}-${i}`} className="text-sm flex items-start gap-2">
-              <span className="font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5">{String(i + 1).padStart(2, "0")}</span>
+            <li key={`qr-${r.slice(0, 15)}-${i}`} className="text-sm flex items-start gap-2.5">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+                {String(i + 1).padStart(2, "0")}
+              </span>
               {r}
             </li>
           ))}
@@ -117,8 +133,26 @@ function NoteDetail({ data }) {
 
 /* ---------- Plan Detail ---------- */
 function PlanDetail({ data }) {
+  const totalHours = data.days.reduce((sum, d) => sum + d.duration_hours, 0);
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-sm border border-border">
+        <div className="text-center flex-1">
+          <div className="font-mono text-base font-bold">{data.num_days}</div>
+          <div className="font-mono text-[10px] text-muted-foreground uppercase">Days</div>
+        </div>
+        <div className="w-px h-8 bg-border" />
+        <div className="text-center flex-1">
+          <div className="font-mono text-base font-bold">{totalHours}h</div>
+          <div className="font-mono text-[10px] text-muted-foreground uppercase">Total</div>
+        </div>
+        <div className="w-px h-8 bg-border" />
+        <div className="text-center flex-1">
+          <div className="font-mono text-base font-bold">{data.hours_per_day}h</div>
+          <div className="font-mono text-[10px] text-muted-foreground uppercase">Per Day</div>
+        </div>
+      </div>
+
       {data.days.map((day) => (
         <div key={`day-${day.day}`} className="flex gap-3 p-3 border border-border bg-background rounded-sm">
           <div className="w-9 h-9 rounded-sm bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
@@ -129,7 +163,7 @@ function PlanDetail({ data }) {
               <span className="text-sm font-bold truncate">{day.topic}</span>
               <span className="font-mono text-[10px] text-muted-foreground shrink-0">{day.duration_hours}h</span>
             </div>
-            <ul className="mt-1 space-y-0.5">
+            <ul className="mt-1.5 space-y-1">
               {day.tasks.map((task, j) => (
                 <li key={`t-${day.day}-${j}`} className="text-xs text-muted-foreground flex items-start gap-1.5">
                   <CheckCircle weight="bold" className="w-3 h-3 mt-0.5 shrink-0 text-[hsl(var(--primary)/0.5)]" />
@@ -149,18 +183,18 @@ function PracticeDetail({ data }) {
   return (
     <div className="space-y-3">
       {data.questions.map((q, i) => (
-        <div key={`q-${i}`} className="p-3 border border-border bg-background rounded-sm">
-          <p className="text-sm font-medium mb-2">
+        <div key={`q-${i}`} className="p-4 border border-border bg-background rounded-sm">
+          <p className="text-sm font-medium mb-3">
             <span className="font-mono text-[hsl(var(--primary))] mr-1.5">Q{i + 1}.</span>
             {q.question}
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
             {q.options.map((opt) => {
               const isCorrect = opt.label === q.correct_answer;
               return (
                 <div
                   key={opt.label}
-                  className={`flex items-center gap-2 p-2 rounded-sm text-xs border ${
+                  className={`flex items-center gap-2.5 p-2.5 rounded-sm text-xs border ${
                     isCorrect ? "border-green-500/40 bg-green-500/5" : "border-border"
                   }`}
                 >
@@ -175,8 +209,8 @@ function PracticeDetail({ data }) {
               );
             })}
           </div>
-          <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded-sm">
-            <span className="font-bold">Explanation:</span> {q.explanation}
+          <div className="text-xs text-muted-foreground p-2.5 bg-muted/30 rounded-sm">
+            <span className="font-bold">Answer:</span> {q.explanation}
           </div>
         </div>
       ))}
@@ -198,10 +232,11 @@ function HistoryCard({ item, onDelete }) {
 
   function renderPreview() {
     if (item.type === "note") {
-      return `${item.preview.key_concepts_count} concepts · ${item.preview.has_formulas ? "Has formulas" : "No formulas"} · ${item.preview.explanation_snippet}...`;
+      const snippet = item.preview.explanation_snippet || "";
+      return `${item.preview.key_concepts_count} concepts · ${item.preview.has_formulas ? "Includes formulas" : "No formulas"} · ${snippet.slice(0, 80)}${snippet.length > 80 ? "..." : ""}`;
     }
     if (item.type === "plan") {
-      return `${item.preview.total_days} days · ${item.preview.hours_per_day}h/day · Starts with: ${item.preview.first_day_topic}`;
+      return `${item.preview.total_days} days · ${item.preview.hours_per_day}h/day · First: ${item.preview.first_day_topic}`;
     }
     if (item.type === "practice") {
       return `${item.preview.num_questions} questions · ${item.preview.first_question}`;
@@ -210,12 +245,8 @@ function HistoryCard({ item, onDelete }) {
   }
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      className="border border-border bg-card card-lift"
+    <div
+      className="border border-border bg-card card-lift rounded-sm"
       data-testid={`history-card-${item.id}`}
     >
       {/* Card Header */}
@@ -227,39 +258,59 @@ function HistoryCard({ item, onDelete }) {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1.5">
             <TypeBadge type={item.type} />
-            <span className="font-mono text-[10px] text-muted-foreground">{formatDate(item.created_at)}</span>
+            <span className="font-mono text-[10px] text-muted-foreground flex items-center gap-1">
+              <Clock weight="regular" className="w-3 h-3" />
+              {formatTimestamp(item.created_at)}
+            </span>
           </div>
           <h3 className="text-base font-bold tracking-tight truncate" style={{ fontFamily: "var(--font-heading)" }}>
             {item.title}
           </h3>
           <p className="font-mono text-xs text-muted-foreground mt-0.5">{item.subtitle}</p>
           {!expanded && (
-            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{renderPreview()}</p>
+            <p className="text-xs text-muted-foreground mt-2.5 line-clamp-2 leading-relaxed">{renderPreview()}</p>
           )}
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-1 shrink-0">
-          <Button
-            data-testid={`expand-${item.id}`}
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-sm"
-            onClick={() => setExpanded((p) => !p)}
-          >
-            {expanded ? <CaretUp className="w-4 h-4" /> : <CaretDown className="w-4 h-4" />}
-          </Button>
-          <Button
-            data-testid={`delete-history-${item.id}`}
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-sm text-muted-foreground hover:text-destructive"
-            onClick={() => onDelete(item.type, item.id)}
-          >
-            <Trash className="w-4 h-4" />
-          </Button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid={`expand-${item.id}`}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-sm gap-1.5 text-xs px-3"
+                  onClick={() => setExpanded((p) => !p)}
+                >
+                  {expanded ? (
+                    <><EyeSlash className="w-3.5 h-3.5" /> Hide</>
+                  ) : (
+                    <><Eye className="w-3.5 h-3.5" /> View Full</>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{expanded ? "Collapse details" : "View full content"}</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid={`delete-history-${item.id}`}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-sm text-muted-foreground hover:text-destructive"
+                  onClick={() => onDelete(item.type, item.id)}
+                >
+                  <Trash className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Delete</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -270,16 +321,16 @@ function HistoryCard({ item, onDelete }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-5 pt-0 border-t border-border mt-0 pt-4" data-testid={`detail-${item.id}`}>
+            <div className="px-5 pb-5 border-t border-border pt-5" data-testid={`detail-${item.id}`}>
               {renderDetail()}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
@@ -327,9 +378,9 @@ export default function HistoryPage() {
       <Header />
 
       <main className="flex-1 overflow-y-auto" data-testid="history-content">
-        <div className="max-w-[960px] mx-auto py-6 px-4 md:px-6">
+        <div className="max-w-[960px] mx-auto py-8 px-4 md:px-6">
           {/* Page Header */}
-          <div className="mb-6">
+          <div className="mb-8">
             <div className="overline text-muted-foreground flex items-center gap-2 mb-2">
               <Clock weight="bold" className="w-3.5 h-3.5" />
               Activity Log
@@ -337,11 +388,11 @@ export default function HistoryPage() {
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
               History
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">All your generated notes, plans, and practice tests in one place.</p>
+            <p className="text-sm text-muted-foreground mt-1.5">All your generated notes, study plans, and quizzes in one place.</p>
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1.5 mb-6 border-b border-border pb-3" data-testid="history-filters">
+          <div className="flex items-center gap-1.5 mb-8 border-b border-border pb-3" data-testid="history-filters">
             {FILTERS.map(({ key, label }) => {
               const isActive = filter === key;
               const count = key === null ? counts.all : counts[key];
@@ -352,10 +403,10 @@ export default function HistoryPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setFilter(key)}
-                  className={`rounded-sm h-8 gap-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded-sm h-8 gap-1.5 text-xs font-medium ${
                     isActive
                       ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
                   {label}
@@ -370,48 +421,46 @@ export default function HistoryPage() {
           </div>
 
           {/* Items */}
-          <ScrollArea className="h-[calc(100vh-240px)]">
-            <div className="space-y-3">
-              <AnimatePresence>
-                {isLoading && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={`skel-h-${i}`} className="border border-border bg-card p-5 mb-3">
-                        <div className="flex gap-4">
-                          <div className="w-10 h-10 bg-muted rounded-sm loading-bar" style={{ animationDelay: `${i * 0.1}s` }} />
-                          <div className="flex-1 space-y-2">
-                            <div className="h-3 bg-muted rounded w-20 loading-bar" style={{ animationDelay: `${i * 0.1 + 0.05}s` }} />
-                            <div className="h-4 bg-muted rounded w-2/3 loading-bar" style={{ animationDelay: `${i * 0.1 + 0.1}s` }} />
-                            <div className="h-2.5 bg-muted rounded w-1/2 loading-bar" style={{ animationDelay: `${i * 0.1 + 0.15}s` }} />
-                          </div>
+          <div className="space-y-4">
+            <AnimatePresence>
+              {isLoading && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={`skel-h-${i}`} className="border border-border bg-card p-5 mb-4 rounded-sm">
+                      <div className="flex gap-4">
+                        <div className="w-10 h-10 bg-muted rounded-sm loading-bar" style={{ animationDelay: `${i * 0.1}s` }} />
+                        <div className="flex-1 space-y-2.5">
+                          <div className="h-3 bg-muted rounded w-24 loading-bar" style={{ animationDelay: `${i * 0.1 + 0.05}s` }} />
+                          <div className="h-4 bg-muted rounded w-2/3 loading-bar" style={{ animationDelay: `${i * 0.1 + 0.1}s` }} />
+                          <div className="h-2.5 bg-muted rounded w-1/2 loading-bar" style={{ animationDelay: `${i * 0.1 + 0.15}s` }} />
                         </div>
                       </div>
-                    ))}
-                  </motion.div>
-                )}
+                    </div>
+                  ))}
+                </motion.div>
+              )}
 
-                {!isLoading && items.length === 0 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col items-center justify-center py-20"
-                  >
-                    <Clock weight="thin" className="w-20 h-20 text-muted-foreground/30 mb-4" />
-                    <h3 className="text-xl font-black tracking-tight mb-2" style={{ fontFamily: "var(--font-heading)" }}>
-                      No history yet
-                    </h3>
-                    <p className="text-sm text-muted-foreground text-center max-w-sm">
-                      Start generating notes, plans, or practice tests — they'll all show up here.
-                    </p>
-                  </motion.div>
-                )}
+              {!isLoading && items.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center py-20"
+                >
+                  <Clock weight="thin" className="w-20 h-20 text-muted-foreground/30 mb-4" />
+                  <h3 className="text-xl font-black tracking-tight mb-2" style={{ fontFamily: "var(--font-heading)" }}>
+                    No history yet
+                  </h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-sm">
+                    Start generating notes, plans, or quizzes — they'll all show up here.
+                  </p>
+                </motion.div>
+              )}
 
-                {!isLoading && items.map((item) => (
-                  <HistoryCard key={item.id} item={item} onDelete={handleDelete} />
-                ))}
-              </AnimatePresence>
-            </div>
-          </ScrollArea>
+              {!isLoading && items.map((item) => (
+                <HistoryCard key={item.id} item={item} onDelete={handleDelete} />
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
       </main>
     </div>

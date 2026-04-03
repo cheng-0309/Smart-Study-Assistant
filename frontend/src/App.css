@@ -47,15 +47,42 @@
   animation: pulse-bar 1s ease-in-out infinite;
 }
 
-/* Card hover lift */
+/* Card hover lift — subtle, no transform shift */
 .card-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .card-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  border-color: hsl(var(--primary) / 0.2);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.dark .card-lift:hover {
+  border-color: hsl(var(--primary) / 0.25);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.2);
 }
 
-.dark .card-lift:hover {
-  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+/* Button hover polish */
+button:not(:disabled) {
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Consistent focus ring */
+*:focus-visible {
+  outline: 2px solid hsl(var(--primary) / 0.5);
+  outline-offset: 2px;
+}
+
+/* Nav active indicator */
+.nav-active-indicator {
+  position: relative;
+}
+.nav-active-indicator::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2px;
+  background: hsl(var(--primary));
+  border-radius: 1px;
 }

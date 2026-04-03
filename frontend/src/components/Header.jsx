@@ -44,7 +44,7 @@ function NavBar() {
             onClick={() => navigate(path)}
             className={`rounded-sm h-9 gap-1.5 text-sm font-medium transition-colors ${
               isActive
-                ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
+                ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] nav-active-indicator"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >

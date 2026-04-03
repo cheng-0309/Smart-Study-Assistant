@@ -10,6 +10,9 @@ import {
   Trash,
   CheckCircle,
   ListBullets,
+  WarningCircle,
+  HourglassHigh,
+  ArrowsClockwise,
 } from "@phosphor-icons/react";
 import Header from "../components/Header";
 import { Input } from "../components/ui/input";
@@ -39,10 +42,15 @@ function PlannerForm({ onGenerate, isLoading }) {
   const [topic, setTopic] = useState("");
   const [hoursPerDay, setHoursPerDay] = useState("2");
   const [numDays, setNumDays] = useState("7");
+  const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!topic.trim()) return;
+    if (!topic.trim()) {
+      setError("Please enter a topic to create a study plan");
+      return;
+    }
+    setError("");
     onGenerate(topic.trim(), parseFloat(hoursPerDay), parseInt(numDays));
   };
 
@@ -56,24 +64,26 @@ function PlannerForm({ onGenerate, isLoading }) {
         Create Study Plan
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="space-y-2 md:col-span-1">
           <Label htmlFor="planner-topic" className="text-sm font-medium">
-            Topic
+            Topic <span className="text-[hsl(var(--primary))]">*</span>
           </Label>
           <Input
             data-testid="planner-topic-input"
             id="planner-topic"
             placeholder="e.g. Organic Chemistry, World War II"
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            className="rounded-sm border-border h-11 bg-background"
+            onChange={(e) => { setTopic(e.target.value); if (error) setError(""); }}
+            className={`rounded-sm border-border h-11 bg-background ${
+              error && !topic.trim() ? "border-destructive ring-1 ring-destructive" : ""
+            }`}
             disabled={isLoading}
           />
         </div>
 
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Hours / Day</Label>
+          <Label className="text-sm font-medium">Hours / Day <span className="text-[hsl(var(--primary))]">*</span></Label>
           <Select value={hoursPerDay} onValueChange={setHoursPerDay} disabled={isLoading}>
             <SelectTrigger data-testid="planner-hours-select" className="rounded-sm h-11 bg-background">
               <SelectValue />
@@ -89,7 +99,7 @@ function PlannerForm({ onGenerate, isLoading }) {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Duration (Days)</Label>
+          <Label className="text-sm font-medium">Duration <span className="text-[hsl(var(--primary))]">*</span></Label>
           <Select value={numDays} onValueChange={setNumDays} disabled={isLoading}>
             <SelectTrigger data-testid="planner-days-select" className="rounded-sm h-11 bg-background">
               <SelectValue />
@@ -105,10 +115,17 @@ function PlannerForm({ onGenerate, isLoading }) {
         </div>
       </div>
 
+      {error && (
+        <div data-testid="planner-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-sm">
+          <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
       <Button
         data-testid="generate-plan-btn"
         type="submit"
-        disabled={isLoading || !topic.trim()}
+        disabled={isLoading}
         className="rounded-sm h-11 px-8 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold tracking-wide transition-opacity"
       >
         {isLoading ? (
@@ -127,6 +144,33 @@ function PlannerForm({ onGenerate, isLoading }) {
   );
 }
 
+function PlanSummary({ plan }) {
+  const totalHours = plan.days.reduce((sum, d) => sum + d.duration_hours, 0);
+  const revisionDays = plan.days.filter((d) =>
+    d.topic.toLowerCase().includes("revis") || d.tasks.some((t) => t.toLowerCase().includes("revis"))
+  ).length;
+
+  return (
+    <div className="grid grid-cols-3 divide-x divide-border border-b border-border" data-testid="plan-summary">
+      <div className="p-4 text-center">
+        <HourglassHigh weight="bold" className="w-4 h-4 text-[hsl(var(--primary))] mx-auto mb-1" />
+        <div className="font-mono text-lg font-bold">{totalHours}h</div>
+        <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">Total Hours</div>
+      </div>
+      <div className="p-4 text-center">
+        <CalendarDots weight="bold" className="w-4 h-4 text-[hsl(var(--primary))] mx-auto mb-1" />
+        <div className="font-mono text-lg font-bold">{plan.num_days}</div>
+        <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">Days</div>
+      </div>
+      <div className="p-4 text-center">
+        <ArrowsClockwise weight="bold" className="w-4 h-4 text-[hsl(var(--primary))] mx-auto mb-1" />
+        <div className="font-mono text-lg font-bold">{revisionDays}</div>
+        <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">Revision Days</div>
+      </div>
+    </div>
+  );
+}
+
 function PlanDisplay({ plan }) {
   if (!plan) return null;
 
@@ -134,15 +178,32 @@ function PlanDisplay({ plan }) {
     <div data-testid="plan-display" className="border border-border bg-card">
       {/* Title */}
       <div className="p-6 border-b border-border">
+        <div className="flex items-center gap-2 mb-2">
+          <CalendarDots weight="bold" className="w-5 h-5 text-[hsl(var(--primary))]" />
+          <h2 className="text-lg font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+            Study Plan
+          </h2>
+        </div>
         <div className="overline text-muted-foreground mb-1">
           {plan.num_days}-Day Plan · {plan.hours_per_day}h/day
         </div>
-        <h2
+        <h3
           className="text-xl md:text-2xl font-black tracking-tight"
           style={{ fontFamily: "var(--font-heading)" }}
         >
           {plan.topic}
-        </h2>
+        </h3>
+      </div>
+
+      {/* Summary Stats */}
+      <PlanSummary plan={plan} />
+
+      {/* Daily Breakdown heading */}
+      <div className="px-6 pt-5 pb-2">
+        <div className="overline text-muted-foreground flex items-center gap-2">
+          <ListBullets weight="bold" className="w-3.5 h-3.5" />
+          Daily Breakdown
+        </div>
       </div>
 
       {/* Timeline */}
@@ -157,7 +218,6 @@ function PlanDisplay({ plan }) {
             className="flex gap-4 p-5 hover:bg-muted/30 transition-colors"
             data-testid={`plan-day-${day.day}`}
           >
-            {/* Day number */}
             <div className="shrink-0 flex flex-col items-center">
               <div className="w-10 h-10 rounded-sm bg-[hsl(var(--primary)/0.1)] flex items-center justify-center">
                 <span className="font-mono text-xs font-bold text-[hsl(var(--primary))]">
@@ -169,7 +229,6 @@ function PlanDisplay({ plan }) {
               )}
             </div>
 
-            {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <h3 className="text-sm font-bold truncate">{day.topic}</h3>

@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Trophy,
   ListBullets,
+  WarningCircle,
 } from "@phosphor-icons/react";
 import Header from "../components/Header";
 import { Input } from "../components/ui/input";
@@ -33,10 +34,25 @@ function PracticeForm({ onGenerate, isLoading }) {
   const [subject, setSubject] = useState("");
   const [chapter, setChapter] = useState("");
   const [numQuestions, setNumQuestions] = useState("5");
+  const [error, setError] = useState("");
+
+  const clearError = () => { if (error) setError(""); };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!subject.trim() || !chapter.trim()) return;
+    if (!subject.trim() && !chapter.trim()) {
+      setError("Please enter subject and chapter");
+      return;
+    }
+    if (!subject.trim()) {
+      setError("Please enter a subject");
+      return;
+    }
+    if (!chapter.trim()) {
+      setError("Please enter a chapter");
+      return;
+    }
+    setError("");
     onGenerate(subject.trim(), chapter.trim(), parseInt(numQuestions));
   };
 
@@ -50,28 +66,36 @@ function PracticeForm({ onGenerate, isLoading }) {
         Generate Practice Test
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="space-y-2">
-          <Label htmlFor="practice-subject" className="text-sm font-medium">Subject</Label>
+          <Label htmlFor="practice-subject" className="text-sm font-medium">
+            Subject <span className="text-[hsl(var(--primary))]">*</span>
+          </Label>
           <Input
             data-testid="practice-subject-input"
             id="practice-subject"
             placeholder="e.g. Physics, History"
             value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            className="rounded-sm border-border h-11 bg-background"
+            onChange={(e) => { setSubject(e.target.value); clearError(); }}
+            className={`rounded-sm border-border h-11 bg-background ${
+              error && !subject.trim() ? "border-destructive ring-1 ring-destructive" : ""
+            }`}
             disabled={isLoading}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="practice-chapter" className="text-sm font-medium">Chapter</Label>
+          <Label htmlFor="practice-chapter" className="text-sm font-medium">
+            Chapter <span className="text-[hsl(var(--primary))]">*</span>
+          </Label>
           <Input
             data-testid="practice-chapter-input"
             id="practice-chapter"
             placeholder="e.g. Newton's Laws"
             value={chapter}
-            onChange={(e) => setChapter(e.target.value)}
-            className="rounded-sm border-border h-11 bg-background"
+            onChange={(e) => { setChapter(e.target.value); clearError(); }}
+            className={`rounded-sm border-border h-11 bg-background ${
+              error && !chapter.trim() ? "border-destructive ring-1 ring-destructive" : ""
+            }`}
             disabled={isLoading}
           />
         </div>
@@ -92,10 +116,17 @@ function PracticeForm({ onGenerate, isLoading }) {
         </div>
       </div>
 
+      {error && (
+        <div data-testid="practice-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-sm">
+          <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
       <Button
         data-testid="generate-practice-btn"
         type="submit"
-        disabled={isLoading || !subject.trim() || !chapter.trim()}
+        disabled={isLoading}
         className="rounded-sm h-11 px-8 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold tracking-wide transition-opacity"
       >
         {isLoading ? (
@@ -233,10 +264,16 @@ function QuizView({ test }) {
       {/* Header */}
       <div className="p-6 border-b border-border flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Exam weight="bold" className="w-5 h-5 text-[hsl(var(--primary))]" />
+            <h2 className="text-lg font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+              Practice Test
+            </h2>
+          </div>
           <div className="overline text-muted-foreground mb-1">{test.subject}</div>
-          <h2 className="text-xl md:text-2xl font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+          <h3 className="text-xl md:text-2xl font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
             {test.chapter}
-          </h2>
+          </h3>
         </div>
         <div className="flex items-center gap-3">
           {submitted && (

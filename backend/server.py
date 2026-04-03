@@ -9,7 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 ROOT_DIR = Path(__file__).parent
@@ -101,6 +101,33 @@ class PracticeRequest(BaseModel):
     subject: str
     chapter: str
     num_questions: int = 5
+
+# --- Exam Planner Models ---
+
+class ExamPlanDay(BaseModel):
+    day: int
+    date: str = ""
+    topics: List[str] = []
+    tasks: List[str] = []
+    duration_hours: float = 0
+    priority: str = "medium"
+
+class ExamPlan(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    subject: str
+    topics: List[str]
+    exam_date: str
+    hours_per_day: float
+    days_until_exam: int
+    days: List[ExamPlanDay] = []
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ExamPlanRequest(BaseModel):
+    subject: str
+    topics: List[str]
+    exam_date: str
+    hours_per_day: float
 
 # --- AI Generation ---
 
@@ -264,6 +291,65 @@ async def generate_practice_with_ai(subject: str, chapter: str, num_questions: i
         raise HTTPException(status_code=500, detail="Failed to parse AI response")
 
 
+EXAM_PLANNER_SYSTEM_PROMPT = """You are an exam preparation planner. Given a subject, list of topics, number of days until the exam, and study hours per day, create a detailed day-by-day exam preparation schedule.
+
+Return ONLY valid JSON in this format:
+{
+  "days": [
+    {
+      "day": 1,
+      "topics": ["Topic A - Subtopic"],
+      "tasks": ["Read chapter X", "Solve 10 problems on Y", "Make summary notes"],
+      "duration_hours": 3.0,
+      "priority": "high"
+    }
+  ]
+}
+
+Rules:
+- Distribute ALL provided topics across the available days
+- Earlier days: focus on learning new topics (priority: "high" or "medium")
+- Middle days: practice and problem-solving (priority: "medium")
+- Final 20-30% of days: dedicated to revision and mock tests (priority: "high")
+- Each day should have 2-5 actionable tasks
+- duration_hours per day should match the hours_per_day requested
+- priority must be one of: "high", "medium", "low"
+- Heavier/harder topics should get more days
+- Include at least 1-2 full revision days near the end
+- Keep tasks actionable: Read, Practice, Solve, Memorize, Revise, Test
+- Return ONLY valid JSON, no markdown code blocks"""
+
+async def generate_exam_plan_with_ai(subject: str, topics: List[str], days_until_exam: int, hours_per_day: float) -> List[ExamPlanDay]:
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        raise HTTPException(status_code=500, detail="LLM API key not configured")
+
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=str(uuid.uuid4()),
+        system_message=EXAM_PLANNER_SYSTEM_PROMPT
+    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+
+    topics_str = "\n".join(f"- {t}" for t in topics)
+    user_message = UserMessage(
+        text=f"Create an exam preparation schedule:\nSubject: {subject}\nTopics to cover:\n{topics_str}\nDays until exam: {days_until_exam}\nStudy hours per day: {hours_per_day}"
+    )
+
+    response = await chat.send_message(user_message)
+    logger.info(f"Exam Planner AI Response: {response[:200]}...")
+
+    try:
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1]
+            cleaned = cleaned.rsplit("```", 1)[0]
+        parsed = json.loads(cleaned)
+        return [ExamPlanDay(**d) for d in parsed["days"]]
+    except (json.JSONDecodeError, KeyError, Exception) as e:
+        logger.error(f"Failed to parse exam planner response: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse AI response")
+
+
 # --- Routes ---
 
 @api_router.get("/")
@@ -327,6 +413,56 @@ async def delete_planner(plan_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Plan not found")
     return {"message": "Plan deleted"}
+
+# --- Exam Planner Routes ---
+
+@api_router.post("/planner/exam/generate", response_model=ExamPlan)
+async def generate_exam_plan(req: ExamPlanRequest):
+    try:
+        exam_date = datetime.fromisoformat(req.exam_date.replace("Z", "+00:00")).date()
+    except ValueError:
+        try:
+            exam_date = datetime.strptime(req.exam_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid exam date format")
+
+    today = datetime.now(timezone.utc).date()
+    days_until_exam = (exam_date - today).days
+    if days_until_exam < 1:
+        raise HTTPException(status_code=400, detail="Exam date must be in the future")
+    if not req.topics or len(req.topics) == 0:
+        raise HTTPException(status_code=400, detail="At least one topic is required")
+
+    days = await generate_exam_plan_with_ai(req.subject, req.topics, days_until_exam, req.hours_per_day)
+
+    # Add actual dates to days
+    for day in days:
+        day_date = today + timedelta(days=day.day)
+        day.date = day_date.isoformat()
+
+    plan = ExamPlan(
+        subject=req.subject,
+        topics=req.topics,
+        exam_date=req.exam_date,
+        hours_per_day=req.hours_per_day,
+        days_until_exam=days_until_exam,
+        days=days
+    )
+    doc = plan.model_dump()
+    await db.exam_plans.insert_one(doc)
+    return plan
+
+@api_router.get("/exam-planners", response_model=List[ExamPlan])
+async def get_all_exam_planners():
+    plans = await db.exam_plans.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return plans
+
+@api_router.delete("/exam-planners/{plan_id}")
+async def delete_exam_planner(plan_id: str):
+    result = await db.exam_plans.delete_one({"id": plan_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Exam plan not found")
+    return {"message": "Exam plan deleted"}
 
 # --- Practice Routes ---
 
@@ -411,6 +547,28 @@ async def get_unified_history(item_type: Optional[str] = None):
                 "data": t,
             })
 
+    if item_type is None or item_type == "exam_plan":
+        exam_plans = await db.exam_plans.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        for ep in exam_plans:
+            topics_str = ", ".join(ep.get("topics", [])[:3])
+            if len(ep.get("topics", [])) > 3:
+                topics_str += f" +{len(ep['topics']) - 3} more"
+            items.append({
+                "type": "exam_plan",
+                "id": ep["id"],
+                "title": ep["subject"],
+                "subtitle": f"Exam: {ep['exam_date'][:10]} · {ep['days_until_exam']} days · {ep['hours_per_day']}h/day",
+                "created_at": ep["created_at"],
+                "preview": {
+                    "days_until_exam": ep["days_until_exam"],
+                    "hours_per_day": ep["hours_per_day"],
+                    "topics_count": len(ep.get("topics", [])),
+                    "topics_summary": topics_str,
+                    "total_days": len(ep.get("days", [])),
+                },
+                "data": ep,
+            })
+
     items.sort(key=lambda x: x["created_at"], reverse=True)
     return items
 
@@ -420,6 +578,7 @@ async def delete_history_item(item_type: str, item_id: str):
         "note": "study_notes",
         "plan": "study_plans",
         "practice": "practice_tests",
+        "exam_plan": "exam_plans",
     }
     coll_name = collection_map.get(item_type)
     if not coll_name:

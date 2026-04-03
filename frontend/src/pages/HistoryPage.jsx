@@ -15,6 +15,11 @@ import {
   ListChecks,
   CheckCircle,
   XCircle,
+  GraduationCap,
+  Target,
+  Fire,
+  Minus,
+  ArrowDown,
 } from "@phosphor-icons/react";
 import Header from "../components/Header";
 import { Button } from "../components/ui/button";
@@ -33,12 +38,14 @@ const TYPE_CONFIG = {
   note: { label: "Notes", icon: NotePencil, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },
   plan: { label: "Study Plan", icon: CalendarDots, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
   practice: { label: "Quiz", icon: Exam, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  exam_plan: { label: "Exam Prep", icon: GraduationCap, color: "text-violet-500", bg: "bg-violet-500/10", border: "border-violet-500/20" },
 };
 
 const FILTERS = [
   { key: null, label: "All" },
   { key: "note", label: "Notes" },
   { key: "plan", label: "Plans" },
+  { key: "exam_plan", label: "Exam Prep" },
   { key: "practice", label: "Quizzes" },
 ];
 
@@ -218,6 +225,94 @@ function PracticeDetail({ data }) {
   );
 }
 
+/* ---------- Exam Plan Detail ---------- */
+const examPriorityConfig = {
+  high: { icon: Fire, color: "text-red-500", bg: "bg-red-500/10", label: "High" },
+  medium: { icon: Minus, color: "text-amber-500", bg: "bg-amber-500/10", label: "Med" },
+  low: { icon: ArrowDown, color: "text-blue-500", bg: "bg-blue-500/10", label: "Low" },
+};
+
+function ExamPlanDetail({ data }) {
+  const totalHours = data.days.reduce((sum, d) => sum + d.duration_hours, 0);
+  return (
+    <div className="space-y-3">
+      {/* Summary bar */}
+      <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-sm border border-border">
+        <div className="text-center flex-1">
+          <div className="font-mono text-base font-bold">{data.days_until_exam}</div>
+          <div className="font-mono text-[10px] text-muted-foreground uppercase">Days Left</div>
+        </div>
+        <div className="w-px h-8 bg-border" />
+        <div className="text-center flex-1">
+          <div className="font-mono text-base font-bold">{totalHours}h</div>
+          <div className="font-mono text-[10px] text-muted-foreground uppercase">Total</div>
+        </div>
+        <div className="w-px h-8 bg-border" />
+        <div className="text-center flex-1">
+          <div className="font-mono text-base font-bold">{data.topics?.length || 0}</div>
+          <div className="font-mono text-[10px] text-muted-foreground uppercase">Topics</div>
+        </div>
+        <div className="w-px h-8 bg-border" />
+        <div className="text-center flex-1">
+          <div className="font-mono text-base font-bold">{data.hours_per_day}h</div>
+          <div className="font-mono text-[10px] text-muted-foreground uppercase">Per Day</div>
+        </div>
+      </div>
+
+      {/* Topics chips */}
+      {data.topics && data.topics.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {data.topics.map((t) => (
+            <span key={`ep-t-${t}`} className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-violet-500/10 text-violet-500 border border-violet-500/20 rounded-sm">
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Day-wise breakdown */}
+      {data.days.map((day) => {
+        const pCfg = examPriorityConfig[day.priority] || examPriorityConfig.medium;
+        const PIcon = pCfg.icon;
+        return (
+          <div key={`ep-day-${day.day}`} className="flex gap-3 p-3 border border-border bg-background rounded-sm">
+            <div className="w-9 h-9 rounded-sm bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
+              <span className="font-mono text-[10px] font-bold text-[hsl(var(--primary))]">D{String(day.day).padStart(2, "0")}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase ${pCfg.bg} ${pCfg.color}`}>
+                    <PIcon weight="bold" className="w-2.5 h-2.5" />
+                    {pCfg.label}
+                  </span>
+                  {day.date && <span className="font-mono text-[10px] text-muted-foreground">{day.date}</span>}
+                </div>
+                <span className="font-mono text-[10px] text-muted-foreground shrink-0">{day.duration_hours}h</span>
+              </div>
+              {day.topics && day.topics.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {day.topics.map((t) => (
+                    <span key={`edt-${day.day}-${t}`} className="text-[10px] font-medium px-2 py-0.5 bg-muted rounded-sm">{t}</span>
+                  ))}
+                </div>
+              )}
+              <ul className="mt-1.5 space-y-1">
+                {day.tasks.map((task, j) => (
+                  <li key={`et-${day.day}-${j}`} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                    <CheckCircle weight="bold" className="w-3 h-3 mt-0.5 shrink-0 text-[hsl(var(--primary)/0.5)]" />
+                    {task}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ---------- History Card ---------- */
 function HistoryCard({ item, onDelete }) {
   const [expanded, setExpanded] = useState(false);
@@ -227,6 +322,7 @@ function HistoryCard({ item, onDelete }) {
     if (item.type === "note") return <NoteDetail data={item.data} />;
     if (item.type === "plan") return <PlanDetail data={item.data} />;
     if (item.type === "practice") return <PracticeDetail data={item.data} />;
+    if (item.type === "exam_plan") return <ExamPlanDetail data={item.data} />;
     return null;
   }
 
@@ -240,6 +336,9 @@ function HistoryCard({ item, onDelete }) {
     }
     if (item.type === "practice") {
       return `${item.preview.num_questions} questions · ${item.preview.first_question}`;
+    }
+    if (item.type === "exam_plan") {
+      return `${item.preview.days_until_exam} days left · ${item.preview.topics_count} topics · ${item.preview.topics_summary}`;
     }
     return "";
   }
@@ -370,6 +469,7 @@ export default function HistoryPage() {
     all: items.length,
     note: items.filter((i) => i.type === "note").length,
     plan: items.filter((i) => i.type === "plan").length,
+    exam_plan: items.filter((i) => i.type === "exam_plan").length,
     practice: items.filter((i) => i.type === "practice").length,
   };
 

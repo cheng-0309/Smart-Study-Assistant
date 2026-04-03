@@ -13,8 +13,11 @@ import {
   WarningCircle,
   HourglassHigh,
   ArrowsClockwise,
+  GraduationCap,
 } from "@phosphor-icons/react";
 import Header from "../components/Header";
+import ExamPlanForm from "../components/ExamPlanForm";
+import ExamPlanDisplay from "../components/ExamPlanDisplay";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
@@ -26,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -38,6 +42,7 @@ const fadeIn = {
   }),
 };
 
+/* ---- Regular Plan Form ---- */
 function PlannerForm({ onGenerate, isLoading }) {
   const [topic, setTopic] = useState("");
   const [hoursPerDay, setHoursPerDay] = useState("2");
@@ -144,6 +149,7 @@ function PlannerForm({ onGenerate, isLoading }) {
   );
 }
 
+/* ---- Plan Summary Stats ---- */
 function PlanSummary({ plan }) {
   const totalHours = plan.days.reduce((sum, d) => sum + d.duration_hours, 0);
   const revisionDays = plan.days.filter((d) =>
@@ -171,12 +177,12 @@ function PlanSummary({ plan }) {
   );
 }
 
+/* ---- Regular Plan Display ---- */
 function PlanDisplay({ plan }) {
   if (!plan) return null;
 
   return (
     <div data-testid="plan-display" className="border border-border bg-card">
-      {/* Title */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-2 mb-2">
           <CalendarDots weight="bold" className="w-5 h-5 text-[hsl(var(--primary))]" />
@@ -195,10 +201,8 @@ function PlanDisplay({ plan }) {
         </h3>
       </div>
 
-      {/* Summary Stats */}
       <PlanSummary plan={plan} />
 
-      {/* Daily Breakdown heading */}
       <div className="px-6 pt-5 pb-2">
         <div className="overline text-muted-foreground flex items-center gap-2">
           <ListBullets weight="bold" className="w-3.5 h-3.5" />
@@ -206,7 +210,6 @@ function PlanDisplay({ plan }) {
         </div>
       </div>
 
-      {/* Timeline */}
       <div className="divide-y divide-border">
         {plan.days.map((day, i) => (
           <motion.div
@@ -256,7 +259,11 @@ function PlanDisplay({ plan }) {
   );
 }
 
-function PlannerHistory({ plans, onSelect, onDelete, activeId }) {
+/* ---- Sidebar History ---- */
+function PlannerHistory({ plans, examPlans, onSelect, onDelete, activeId, activeTab }) {
+  const displayPlans = activeTab === "regular" ? plans : examPlans;
+  const isExam = activeTab === "exam";
+
   return (
     <div
       data-testid="planner-history-panel"
@@ -265,19 +272,19 @@ function PlannerHistory({ plans, onSelect, onDelete, activeId }) {
       <div className="p-4 border-b border-border">
         <div className="overline text-muted-foreground flex items-center gap-2">
           <ListBullets weight="bold" className="w-3.5 h-3.5" />
-          Saved Plans
+          {isExam ? "Exam Plans" : "Saved Plans"}
         </div>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="p-2">
-          {plans.length === 0 && (
+          {displayPlans.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8 px-4">
-              No saved plans yet.
+              {isExam ? "No exam plans yet." : "No saved plans yet."}
             </p>
           )}
 
-          {plans.map((plan) => (
+          {displayPlans.map((plan) => (
             <div
               key={plan.id}
               className={`group p-3 mb-1 cursor-pointer transition-colors rounded-sm ${
@@ -290,9 +297,14 @@ function PlannerHistory({ plans, onSelect, onDelete, activeId }) {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{plan.topic}</p>
+                  <p className="text-sm font-medium truncate">
+                    {isExam ? plan.subject : plan.topic}
+                  </p>
                   <span className="font-mono text-[10px] text-muted-foreground">
-                    {plan.num_days} days · {plan.hours_per_day}h/day
+                    {isExam
+                      ? `${plan.days_until_exam}d · ${plan.topics?.length || 0} topics`
+                      : `${plan.num_days} days · ${plan.hours_per_day}h/day`
+                    }
                   </span>
                 </div>
                 <Button
@@ -302,7 +314,7 @@ function PlannerHistory({ plans, onSelect, onDelete, activeId }) {
                   className="opacity-0 group-hover:opacity-100 h-7 w-7 rounded-sm shrink-0 text-muted-foreground hover:text-destructive"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDelete(plan.id);
+                    onDelete(plan.id, isExam);
                   }}
                 >
                   <Trash className="w-3.5 h-3.5" />
@@ -316,17 +328,25 @@ function PlannerHistory({ plans, onSelect, onDelete, activeId }) {
   );
 }
 
+/* ---- Main Planner Page ---- */
 export default function PlannerPage() {
   const [plans, setPlans] = useState([]);
+  const [examPlans, setExamPlans] = useState([]);
   const [activePlan, setActivePlan] = useState(null);
+  const [activeExamPlan, setActiveExamPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState("regular");
 
   useEffect(() => {
     async function loadPlans() {
       try {
-        const res = await axios.get(`${API}/planners`);
-        setPlans(res.data);
+        const [regRes, examRes] = await Promise.all([
+          axios.get(`${API}/planners`),
+          axios.get(`${API}/exam-planners`),
+        ]);
+        setPlans(regRes.data);
+        setExamPlans(examRes.data);
       } catch {
         /* silent on initial load */
       }
@@ -352,16 +372,44 @@ export default function PlannerPage() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleExamGenerate = async (subject, topics, examDate, hoursPerDay) => {
+    setIsLoading(true);
     try {
-      await axios.delete(`${API}/planners/${id}`);
-      setPlans((prev) => prev.filter((p) => p.id !== id));
-      if (activePlan?.id === id) setActivePlan(null);
+      const res = await axios.post(`${API}/planner/exam/generate`, {
+        subject,
+        topics,
+        exam_date: examDate,
+        hours_per_day: hoursPerDay,
+      });
+      setActiveExamPlan(res.data);
+      setExamPlans((prev) => [res.data, ...prev]);
+      toast.success("Exam preparation plan created!");
+    } catch (err) {
+      const msg = err?.response?.data?.detail || "Failed to generate exam plan. Please try again.";
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id, isExam) => {
+    try {
+      if (isExam) {
+        await axios.delete(`${API}/exam-planners/${id}`);
+        setExamPlans((prev) => prev.filter((p) => p.id !== id));
+        if (activeExamPlan?.id === id) setActiveExamPlan(null);
+      } else {
+        await axios.delete(`${API}/planners/${id}`);
+        setPlans((prev) => prev.filter((p) => p.id !== id));
+        if (activePlan?.id === id) setActivePlan(null);
+      }
       toast.success("Plan deleted");
     } catch {
       toast.error("Failed to delete plan");
     }
   };
+
+  const currentActive = activeTab === "regular" ? activePlan : activeExamPlan;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -373,7 +421,35 @@ export default function PlannerPage() {
       <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 overflow-y-auto" data-testid="planner-content">
           <div className="max-w-[960px] mx-auto py-6 px-4 md:px-6">
-            <PlannerForm onGenerate={handleGenerate} isLoading={isLoading} />
+            {/* Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-0">
+              <TabsList className="mb-4 rounded-sm" data-testid="planner-tabs">
+                <TabsTrigger
+                  value="regular"
+                  className="rounded-sm gap-1.5 text-xs"
+                  data-testid="tab-regular"
+                >
+                  <CalendarDots weight="bold" className="w-3.5 h-3.5" />
+                  Study Plan
+                </TabsTrigger>
+                <TabsTrigger
+                  value="exam"
+                  className="rounded-sm gap-1.5 text-xs"
+                  data-testid="tab-exam"
+                >
+                  <GraduationCap weight="bold" className="w-3.5 h-3.5" />
+                  Exam Prep
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="regular">
+                <PlannerForm onGenerate={handleGenerate} isLoading={isLoading} />
+              </TabsContent>
+
+              <TabsContent value="exam">
+                <ExamPlanForm onGenerate={handleExamGenerate} isLoading={isLoading} />
+              </TabsContent>
+            </Tabs>
 
             <AnimatePresence mode="wait">
               {isLoading && (
@@ -398,9 +474,9 @@ export default function PlannerPage() {
                 </motion.div>
               )}
 
-              {!isLoading && activePlan && (
+              {!isLoading && activeTab === "regular" && activePlan && (
                 <motion.div
-                  key="display"
+                  key="display-regular"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
@@ -410,7 +486,19 @@ export default function PlannerPage() {
                 </motion.div>
               )}
 
-              {!isLoading && !activePlan && (
+              {!isLoading && activeTab === "exam" && activeExamPlan && (
+                <motion.div
+                  key="display-exam"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-0"
+                >
+                  <ExamPlanDisplay plan={activeExamPlan} />
+                </motion.div>
+              )}
+
+              {!isLoading && !currentActive && (
                 <motion.div
                   key="empty"
                   initial={{ opacity: 0 }}
@@ -418,15 +506,22 @@ export default function PlannerPage() {
                   exit={{ opacity: 0 }}
                   className="flex flex-col items-center justify-center py-20 px-6"
                 >
-                  <CalendarDots weight="thin" className="w-20 h-20 text-muted-foreground/30 mb-4" />
+                  {activeTab === "regular" ? (
+                    <CalendarDots weight="thin" className="w-20 h-20 text-muted-foreground/30 mb-4" />
+                  ) : (
+                    <GraduationCap weight="thin" className="w-20 h-20 text-muted-foreground/30 mb-4" />
+                  )}
                   <h3
                     className="text-xl font-black tracking-tight mb-2"
                     style={{ fontFamily: "var(--font-heading)" }}
                   >
-                    Plan your study
+                    {activeTab === "regular" ? "Plan your study" : "Prepare for your exam"}
                   </h3>
                   <p className="text-sm text-muted-foreground text-center max-w-sm">
-                    Enter a topic and your availability to get a personalized day-by-day study schedule.
+                    {activeTab === "regular"
+                      ? "Enter a topic and your availability to get a personalized day-by-day study schedule."
+                      : "Add your exam date and topics to get a targeted preparation schedule with priorities."
+                    }
                   </p>
                 </motion.div>
               )}
@@ -446,9 +541,14 @@ export default function PlannerPage() {
             >
               <PlannerHistory
                 plans={plans}
-                onSelect={setActivePlan}
+                examPlans={examPlans}
+                onSelect={(plan) => {
+                  if (activeTab === "regular") setActivePlan(plan);
+                  else setActiveExamPlan(plan);
+                }}
                 onDelete={handleDelete}
-                activeId={activePlan?.id}
+                activeId={currentActive?.id}
+                activeTab={activeTab}
               />
             </motion.aside>
           )}

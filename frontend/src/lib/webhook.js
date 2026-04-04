@@ -1,4 +1,4 @@
-const WEBHOOK_URL = "http://localhost:5678/webhook-test/study-webhook";
+const WEBHOOK_URL = "https://tereasa-insertable-nonexpectantly.ngrok-free.dev/webhook-test/study-webhook";
 
 export async function sendToWebhook(payload) {
   if (!payload || !payload.type) return;

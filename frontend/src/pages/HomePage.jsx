@@ -7,6 +7,7 @@ import NoteDisplay from "../components/NoteDisplay";
 import SavedNotes from "../components/SavedNotes";
 import EmptyState from "../components/EmptyState";
 import { AnimatePresence, motion } from "framer-motion";
+import { sendToWebhook } from "../lib/webhook";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -88,6 +89,14 @@ export default function HomePage() {
       setActiveNote(res.data);
       setNotes((prev) => [res.data, ...prev]);
       toast.success("Notes generated successfully!");
+      sendToWebhook({
+        type: "notes",
+        subject,
+        topic: chapter,
+        note_type: noteType,
+        content: res.data.content,
+        timestamp: new Date().toISOString(),
+      });
     } catch {
       toast.error("Failed to generate notes. Please try again.");
     } finally {

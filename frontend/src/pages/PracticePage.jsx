@@ -15,6 +15,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import Header from "../components/Header";
+import { sendToWebhook } from "../lib/webhook";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
@@ -436,6 +437,14 @@ export default function PracticePage() {
       setActiveTest(res.data);
       setTests((prev) => [res.data, ...prev]);
       toast.success("Practice test generated!");
+      sendToWebhook({
+        type: "quiz",
+        subject,
+        topic: chapter,
+        question_count: numQuestions,
+        questions: res.data.questions,
+        timestamp: new Date().toISOString(),
+      });
     } catch {
       toast.error("Failed to generate test. Please try again.");
     } finally {

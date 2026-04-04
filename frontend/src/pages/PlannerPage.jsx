@@ -18,6 +18,7 @@ import {
 import Header from "../components/Header";
 import ExamPlanForm from "../components/ExamPlanForm";
 import ExamPlanDisplay from "../components/ExamPlanDisplay";
+import { sendToWebhook } from "../lib/webhook";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
@@ -365,6 +366,15 @@ export default function PlannerPage() {
       setActivePlan(res.data);
       setPlans((prev) => [res.data, ...prev]);
       toast.success("Study plan created!");
+      sendToWebhook({
+        type: "planner",
+        mode: "study",
+        topic,
+        hours_per_day: hoursPerDay,
+        duration_days: numDays,
+        content: res.data,
+        timestamp: new Date().toISOString(),
+      });
     } catch {
       toast.error("Failed to generate plan. Please try again.");
     } finally {
@@ -384,6 +394,16 @@ export default function PlannerPage() {
       setActiveExamPlan(res.data);
       setExamPlans((prev) => [res.data, ...prev]);
       toast.success("Exam preparation plan created!");
+      sendToWebhook({
+        type: "planner",
+        mode: "exam",
+        subject,
+        topics,
+        exam_date: examDate,
+        hours_per_day: hoursPerDay,
+        content: res.data,
+        timestamp: new Date().toISOString(),
+      });
     } catch (err) {
       const msg = err?.response?.data?.detail || "Failed to generate exam plan. Please try again.";
       toast.error(msg);

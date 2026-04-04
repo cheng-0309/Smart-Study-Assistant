@@ -90,11 +90,14 @@ class MCQOption(BaseModel):
     label: str
     text: str
 
-class MCQuestion(BaseModel):
+class BaseQuestion(BaseModel):
+    question_type: str = "mcq"
     question: str
-    options: List[MCQOption] = []
-    correct_answer: str
     explanation: str = ""
+    options: List[MCQOption] = []
+    correct_answer: str = ""
+    model_answer: str = ""
+    key_points: List[str] = []
 
 class PracticeTest(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -102,13 +105,15 @@ class PracticeTest(BaseModel):
     subject: str
     chapter: str
     num_questions: int
-    questions: List[MCQuestion] = []
+    question_type: str = "mixed"
+    questions: List[BaseQuestion] = []
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class PracticeRequest(BaseModel):
     subject: str
     chapter: str
     num_questions: int = 5
+    question_type: str = "mixed"
 
 # --- Exam Planner Models ---
 
@@ -267,10 +272,11 @@ async def generate_planner_with_ai(topic: str, hours_per_day: float, num_days: i
         raise HTTPException(status_code=500, detail="Failed to parse AI response")
 
 
-PRACTICE_SYSTEM_PROMPT = """You are a test generator for students. When given a subject, chapter, and number of questions, generate multiple choice questions. Return ONLY valid JSON in this format:
+PRACTICE_SYSTEM_PROMPT = """You are a test generator for students. Generate questions of the specified types. Return ONLY valid JSON in this format:
 {
   "questions": [
     {
+      "question_type": "mcq",
       "question": "What is ...?",
       "options": [
         {"label": "A", "text": "Option text"},
@@ -279,22 +285,86 @@ PRACTICE_SYSTEM_PROMPT = """You are a test generator for students. When given a 
         {"label": "D", "text": "Option text"}
       ],
       "correct_answer": "A",
-      "explanation": "Brief explanation why A is correct"
+      "explanation": "Brief explanation"
+    },
+    {
+      "question_type": "true_false",
+      "question": "Statement to evaluate as true or false",
+      "options": [],
+      "correct_answer": "True",
+      "explanation": "Brief explanation"
+    },
+    {
+      "question_type": "numerical",
+      "question": "Calculate the value of ...",
+      "options": [],
+      "correct_answer": "42",
+      "explanation": "Step-by-step solution"
+    },
+    {
+      "question_type": "short_answer",
+      "question": "Briefly explain ...",
+      "options": [],
+      "correct_answer": "",
+      "model_answer": "A concise 2-3 sentence answer",
+      "key_points": ["Key point 1", "Key point 2", "Key point 3"]
+    },
+    {
+      "question_type": "long_answer",
+      "question": "Discuss in detail ...",
+      "options": [],
+      "correct_answer": "",
+      "model_answer": "A detailed model answer covering all aspects",
+      "key_points": ["Key point 1", "Key point 2", "Key point 3", "Key point 4"]
     }
   ]
 }
 
 Rules:
-- Each question must have exactly 4 options (A, B, C, D)
-- correct_answer must be one of A, B, C, D
-- Include a mix of easy, medium, and hard questions
-- Explanations should be brief (1-2 sentences)
+- question_type must be one of: mcq, true_false, numerical, short_answer, long_answer
+- MCQ: exactly 4 options (A,B,C,D), correct_answer is A/B/C/D
+- True/False: correct_answer is "True" or "False", options array empty
+- Numerical: correct_answer is the numeric answer as string, options array empty
+- Short Answer: provide model_answer (2-3 sentences) and 3+ key_points, correct_answer empty
+- Long Answer: provide model_answer (detailed) and 4+ key_points, correct_answer empty
+- All types must include explanation
 - Questions should test understanding, not just memorization
-- Include some tricky/puzzle-like questions
-- Keep language simple
 - Return ONLY valid JSON, no markdown code blocks"""
 
-async def generate_practice_with_ai(subject: str, chapter: str, num_questions: int) -> List[MCQuestion]:
+def build_practice_prompt(subject: str, chapter: str, num_questions: int, question_type: str) -> str:
+    if question_type == "mixed":
+        mcq_count = max(1, round(num_questions * 0.4))
+        tf_count = max(1, round(num_questions * 0.2))
+        num_count = max(1, round(num_questions * 0.2))
+        sa_count = num_questions - mcq_count - tf_count - num_count
+        if sa_count < 1:
+            sa_count = 1
+            mcq_count = num_questions - tf_count - num_count - sa_count
+        return (
+            f"Generate exactly {num_questions} practice questions for:\n"
+            f"Subject: {subject}\nChapter: {chapter}\n\n"
+            f"Distribution:\n"
+            f"- {mcq_count} MCQ questions (question_type: mcq)\n"
+            f"- {tf_count} True/False questions (question_type: true_false)\n"
+            f"- {num_count} Numerical questions (question_type: numerical)\n"
+            f"- {sa_count} Short Answer questions (question_type: short_answer)"
+        )
+
+    type_map = {
+        "mcq": "MCQ (multiple choice with 4 options)",
+        "true_false": "True/False",
+        "numerical": "Numerical (integer answer)",
+        "short_answer": "Short Answer (2-3 sentence response)",
+        "long_answer": "Long Answer (detailed response)",
+    }
+    type_label = type_map.get(question_type, question_type)
+    return (
+        f"Generate exactly {num_questions} {type_label} questions for:\n"
+        f"Subject: {subject}\nChapter: {chapter}\n\n"
+        f"All questions must have question_type: \"{question_type}\""
+    )
+
+async def generate_practice_with_ai(subject: str, chapter: str, num_questions: int, question_type: str = "mixed") -> List[BaseQuestion]:
     api_key = os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
         raise HTTPException(status_code=500, detail="LLM API key not configured")
@@ -306,7 +376,7 @@ async def generate_practice_with_ai(subject: str, chapter: str, num_questions: i
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
     user_message = UserMessage(
-        text=f"Generate {num_questions} MCQ practice questions for:\nSubject: {subject}\nChapter: {chapter}"
+        text=build_practice_prompt(subject, chapter, num_questions, question_type)
     )
 
     response = await chat.send_message(user_message)
@@ -318,7 +388,7 @@ async def generate_practice_with_ai(subject: str, chapter: str, num_questions: i
             cleaned = cleaned.split("\n", 1)[1]
             cleaned = cleaned.rsplit("```", 1)[0]
         parsed = json.loads(cleaned)
-        return [MCQuestion(**q) for q in parsed["questions"]]
+        return [BaseQuestion(**q) for q in parsed["questions"]]
     except (json.JSONDecodeError, KeyError, Exception) as e:
         logger.error(f"Failed to parse practice response: {e}")
         raise HTTPException(status_code=500, detail="Failed to parse AI response")
@@ -505,11 +575,14 @@ async def delete_exam_planner(plan_id: str):
 
 @api_router.post("/practice/generate", response_model=PracticeTest)
 async def generate_practice(req: PracticeRequest):
-    questions = await generate_practice_with_ai(req.subject, req.chapter, req.num_questions)
+    valid_types = ["mixed", "mcq", "true_false", "numerical", "short_answer", "long_answer"]
+    q_type = req.question_type if req.question_type in valid_types else "mixed"
+    questions = await generate_practice_with_ai(req.subject, req.chapter, req.num_questions, q_type)
     test = PracticeTest(
         subject=req.subject,
         chapter=req.chapter,
         num_questions=req.num_questions,
+        question_type=q_type,
         questions=questions
     )
     doc = test.model_dump()
@@ -580,6 +653,7 @@ async def get_unified_history(item_type: Optional[str] = None):
                 "created_at": t["created_at"],
                 "preview": {
                     "num_questions": t["num_questions"],
+                    "question_type": t.get("question_type", "mcq"),
                     "first_question": t.get("questions", [{}])[0].get("question", "") if t.get("questions") else "",
                 },
                 "data": t,

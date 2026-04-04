@@ -252,41 +252,96 @@ function PlanDetail({ data }) {
 }
 
 /* ---------- Practice Detail ---------- */
+const Q_TYPE_LABELS = { mcq: "MCQ", true_false: "T/F", numerical: "Num", short_answer: "Short", long_answer: "Long" };
+
 function PracticeDetail({ data }) {
   return (
     <div className="space-y-3">
-      {data.questions.map((q, i) => (
-        <div key={`q-${i}`} className="p-4 border border-border bg-background rounded-sm">
-          <p className="text-sm font-medium mb-3">
-            <span className="font-mono text-[hsl(var(--primary))] mr-1.5">Q{i + 1}.</span>
-            {q.question}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-            {q.options.map((opt) => {
-              const isCorrect = opt.label === q.correct_answer;
-              return (
-                <div
-                  key={opt.label}
-                  className={`flex items-center gap-2.5 p-2.5 rounded-sm text-xs border ${
-                    isCorrect ? "border-green-500/40 bg-green-500/5" : "border-border"
-                  }`}
-                >
-                  <span className={`w-5 h-5 rounded-sm flex items-center justify-center font-mono text-[10px] font-bold ${
-                    isCorrect ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
-                  }`}>
-                    {opt.label}
-                  </span>
-                  <span className="flex-1">{opt.text}</span>
-                  {isCorrect && <CheckCircle weight="bold" className="w-3.5 h-3.5 text-green-500 shrink-0" />}
-                </div>
-              );
-            })}
+      {data.question_type && (
+        <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]">
+          {Q_TYPE_LABELS[data.question_type] || data.question_type || "MCQ"}
+        </Badge>
+      )}
+      {data.questions.map((q, i) => {
+        const qt = q.question_type || "mcq";
+        return (
+          <div key={`q-${i}`} className="p-4 border border-border bg-background rounded-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground">
+                {Q_TYPE_LABELS[qt] || qt}
+              </span>
+            </div>
+            <p className="text-sm font-medium mb-3">
+              <span className="font-mono text-[hsl(var(--primary))] mr-1.5">Q{i + 1}.</span>
+              {q.question}
+            </p>
+
+            {/* MCQ options */}
+            {qt === "mcq" && q.options && q.options.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                {q.options.map((opt) => {
+                  const isCorrect = opt.label === q.correct_answer;
+                  return (
+                    <div
+                      key={opt.label}
+                      className={`flex items-center gap-2.5 p-2.5 rounded-sm text-xs border ${
+                        isCorrect ? "border-green-500/40 bg-green-500/5" : "border-border"
+                      }`}
+                    >
+                      <span className={`w-5 h-5 rounded-sm flex items-center justify-center font-mono text-[10px] font-bold ${
+                        isCorrect ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {opt.label}
+                      </span>
+                      <span className="flex-1">{opt.text}</span>
+                      {isCorrect && <CheckCircle weight="bold" className="w-3.5 h-3.5 text-green-500 shrink-0" />}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* True/False answer */}
+            {qt === "true_false" && q.correct_answer && (
+              <div className="mb-3 text-xs font-mono">
+                Answer: <span className="font-bold text-green-500">{q.correct_answer}</span>
+              </div>
+            )}
+
+            {/* Numerical answer */}
+            {qt === "numerical" && q.correct_answer && (
+              <div className="mb-3 text-xs font-mono">
+                Answer: <span className="font-bold text-green-500">{q.correct_answer}</span>
+              </div>
+            )}
+
+            {/* Model answer for subjective */}
+            {(qt === "short_answer" || qt === "long_answer") && q.model_answer && (
+              <div className="mb-3 p-3 bg-muted/20 border border-border rounded-sm">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Model Answer</div>
+                <p className="text-xs leading-relaxed">{q.model_answer}</p>
+                {q.key_points && q.key_points.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {q.key_points.map((kp, j) => (
+                      <li key={`kp-${j}`} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                        <Star weight="bold" className="w-3 h-3 mt-0.5 shrink-0 text-[hsl(var(--primary)/0.5)]" />
+                        {kp}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {/* Explanation */}
+            {q.explanation && (
+              <div className="text-xs text-muted-foreground p-2.5 bg-muted/30 rounded-sm">
+                <span className="font-bold">Explanation:</span> {q.explanation}
+              </div>
+            )}
           </div>
-          <div className="text-xs text-muted-foreground p-2.5 bg-muted/30 rounded-sm">
-            <span className="font-bold">Answer:</span> {q.explanation}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -402,7 +457,8 @@ function HistoryCard({ item, onDelete }) {
       return `${item.preview.total_days} days · ${item.preview.hours_per_day}h/day · First: ${item.preview.first_day_topic}`;
     }
     if (item.type === "practice") {
-      return `${item.preview.num_questions} questions · ${item.preview.first_question}`;
+      const qType = Q_TYPE_LABELS[item.preview.question_type] || item.preview.question_type || "MCQ";
+      return `${qType} · ${item.preview.num_questions} questions · ${item.preview.first_question}`;
     }
     if (item.type === "exam_plan") {
       return `${item.preview.days_until_exam} days left · ${item.preview.topics_count} topics · ${item.preview.topics_summary}`;

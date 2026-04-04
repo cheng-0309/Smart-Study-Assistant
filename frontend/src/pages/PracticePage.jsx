@@ -13,6 +13,13 @@ import {
   Trophy,
   ListBullets,
   WarningCircle,
+  TextT,
+  Hash,
+  CheckSquare,
+  PencilSimpleLine,
+  Article,
+  Eye,
+  Star,
 } from "@phosphor-icons/react";
 import Header from "../components/Header";
 import { sendToWebhook } from "../lib/webhook";
@@ -21,6 +28,7 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Badge } from "../components/ui/badge";
+import { Textarea } from "../components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -31,10 +39,42 @@ import {
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+const QUESTION_TYPES = [
+  { value: "mixed", label: "Mixed" },
+  { value: "mcq", label: "MCQ" },
+  { value: "true_false", label: "True / False" },
+  { value: "numerical", label: "Numerical" },
+  { value: "short_answer", label: "Short Answer" },
+  { value: "long_answer", label: "Long Answer" },
+];
+
+const TYPE_LABELS = {
+  mixed: "Mixed",
+  mcq: "MCQ",
+  true_false: "T/F",
+  numerical: "Num",
+  short_answer: "Short",
+  long_answer: "Long",
+};
+
+const TYPE_ICONS = {
+  mcq: CheckSquare,
+  true_false: CheckCircle,
+  numerical: Hash,
+  short_answer: PencilSimpleLine,
+  long_answer: Article,
+};
+
+function isAutoGradable(qt) {
+  return ["mcq", "true_false", "numerical"].includes(qt);
+}
+
+/* ============== FORM ============== */
 function PracticeForm({ onGenerate, isLoading }) {
   const [subject, setSubject] = useState("");
   const [chapter, setChapter] = useState("");
   const [numQuestions, setNumQuestions] = useState("5");
+  const [questionType, setQuestionType] = useState("mixed");
   const [error, setError] = useState("");
 
   const clearError = () => { if (error) setError(""); };
@@ -54,7 +94,7 @@ function PracticeForm({ onGenerate, isLoading }) {
       return;
     }
     setError("");
-    onGenerate(subject.trim(), chapter.trim(), parseInt(numQuestions));
+    onGenerate(subject.trim(), chapter.trim(), parseInt(numQuestions), questionType);
   };
 
   return (
@@ -67,7 +107,7 @@ function PracticeForm({ onGenerate, isLoading }) {
         Generate Practice Test
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div className="space-y-2">
           <Label htmlFor="practice-subject" className="text-sm font-medium">
             Subject <span className="text-[hsl(var(--primary))]">*</span>
@@ -99,6 +139,24 @@ function PracticeForm({ onGenerate, isLoading }) {
             }`}
             disabled={isLoading}
           />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Question Type</Label>
+          <Select value={questionType} onValueChange={setQuestionType} disabled={isLoading}>
+            <SelectTrigger data-testid="practice-type-select" className="rounded-sm h-11 bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-sm">
+              {QUESTION_TYPES.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label className="text-sm font-medium">Questions</Label>
@@ -146,6 +204,19 @@ function PracticeForm({ onGenerate, isLoading }) {
   );
 }
 
+/* ============== QUESTION TYPE BADGE ============== */
+function QTypeBadge({ type }) {
+  const Icon = TYPE_ICONS[type] || Exam;
+  const label = TYPE_LABELS[type] || type;
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-muted text-muted-foreground">
+      <Icon weight="bold" className="w-3 h-3" />
+      {label}
+    </span>
+  );
+}
+
+/* ============== MCQ OPTION HELPERS ============== */
 function getOptionLabelStyle(isSelected, isCorrect, isWrong, submitted) {
   if (isSelected && !submitted) return "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]";
   if (isCorrect) return "bg-green-500 text-white";
@@ -186,7 +257,184 @@ function OptionButton({ opt, isSelected, isCorrect, isWrong, submitted, onSelect
   );
 }
 
-function QuizNavigation({ currentQ, totalQ, answers, submitted, onPrev, onNext, onSubmit, onReset, onDotClick }) {
+/* ============== MCQ QUESTION ============== */
+function MCQQuestion({ q, answer, submitted, onSelect }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {q.options.map((opt) => (
+        <OptionButton
+          key={opt.label}
+          opt={opt}
+          isSelected={answer === opt.label}
+          isCorrect={submitted && opt.label === q.correct_answer}
+          isWrong={submitted && answer === opt.label && opt.label !== q.correct_answer}
+          submitted={submitted}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ============== TRUE/FALSE QUESTION ============== */
+function TrueFalseQuestion({ q, answer, submitted, onSelect }) {
+  const options = ["True", "False"];
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {options.map((opt) => {
+        const isSelected = answer === opt;
+        const isCorrect = submitted && opt === q.correct_answer;
+        const isWrong = submitted && isSelected && opt !== q.correct_answer;
+        const { border, bg } = getOptionBorderStyle(isSelected, isCorrect, isWrong, submitted);
+        const labelStyle = getOptionLabelStyle(isSelected, isCorrect, isWrong, submitted);
+
+        return (
+          <button
+            key={opt}
+            data-testid={`tf-option-${opt.toLowerCase()}`}
+            onClick={() => onSelect(opt)}
+            disabled={submitted}
+            className={`flex items-center justify-center gap-3 p-5 border rounded-sm transition-all ${border} ${bg} ${
+              !submitted ? "cursor-pointer" : "cursor-default"
+            }`}
+          >
+            <span className={`w-8 h-8 rounded-sm flex items-center justify-center font-mono text-sm font-bold ${labelStyle}`}>
+              {opt === "True" ? "T" : "F"}
+            </span>
+            <span className="text-sm font-bold">{opt}</span>
+            {submitted && isCorrect && <CheckCircle weight="bold" className="w-5 h-5 text-green-500" />}
+            {submitted && isWrong && <XCircle weight="bold" className="w-5 h-5 text-red-500" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ============== NUMERICAL QUESTION ============== */
+function NumericalQuestion({ q, answer, submitted, onAnswer }) {
+  const isCorrect = submitted && String(answer).trim() === String(q.correct_answer).trim();
+  const isWrong = submitted && !isCorrect && answer;
+
+  return (
+    <div className="max-w-sm">
+      <div className={`border rounded-sm transition-all ${
+        submitted
+          ? isCorrect ? "border-green-500 bg-green-500/5" : isWrong ? "border-red-500 bg-red-500/5" : "border-border"
+          : answer ? "border-[hsl(var(--primary))]" : "border-border"
+      }`}>
+        <div className="flex items-center gap-2 p-3">
+          <Hash weight="bold" className="w-4 h-4 text-muted-foreground shrink-0" />
+          <Input
+            data-testid="numerical-input"
+            type="text"
+            inputMode="numeric"
+            placeholder="Enter your answer"
+            value={answer || ""}
+            onChange={(e) => onAnswer(e.target.value)}
+            disabled={submitted}
+            className="border-0 h-auto p-0 bg-transparent focus-visible:ring-0 font-mono"
+          />
+          {submitted && isCorrect && <CheckCircle weight="bold" className="w-5 h-5 text-green-500 shrink-0" />}
+          {submitted && isWrong && <XCircle weight="bold" className="w-5 h-5 text-red-500 shrink-0" />}
+        </div>
+      </div>
+      {submitted && (
+        <div className="mt-2 text-xs font-mono text-muted-foreground">
+          Correct answer: <span className="font-bold text-foreground">{q.correct_answer}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============== SHORT ANSWER QUESTION ============== */
+function ShortAnswerQuestion({ q, answer, submitted, onAnswer, showModel }) {
+  return (
+    <div className="space-y-3">
+      <Textarea
+        data-testid="short-answer-input"
+        placeholder="Write your answer (2-3 sentences)..."
+        value={answer || ""}
+        onChange={(e) => onAnswer(e.target.value)}
+        disabled={submitted}
+        rows={3}
+        className="rounded-sm bg-background resize-none"
+      />
+      {submitted && answer && (
+        <div className="flex items-center gap-2 text-xs">
+          <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest text-amber-500 border-amber-500/30 bg-amber-500/5">
+            Practice Attempted
+          </Badge>
+        </div>
+      )}
+      {submitted && showModel && q.model_answer && (
+        <ModelAnswerPanel q={q} />
+      )}
+    </div>
+  );
+}
+
+/* ============== LONG ANSWER QUESTION ============== */
+function LongAnswerQuestion({ q, answer, submitted, onAnswer, showModel }) {
+  return (
+    <div className="space-y-3">
+      <Textarea
+        data-testid="long-answer-input"
+        placeholder="Write a detailed response..."
+        value={answer || ""}
+        onChange={(e) => onAnswer(e.target.value)}
+        disabled={submitted}
+        rows={6}
+        className="rounded-sm bg-background resize-none"
+      />
+      {submitted && answer && (
+        <div className="flex items-center gap-2 text-xs">
+          <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest text-amber-500 border-amber-500/30 bg-amber-500/5">
+            Practice Attempted
+          </Badge>
+        </div>
+      )}
+      {submitted && showModel && q.model_answer && (
+        <ModelAnswerPanel q={q} />
+      )}
+    </div>
+  );
+}
+
+/* ============== MODEL ANSWER PANEL ============== */
+function ModelAnswerPanel({ q }) {
+  return (
+    <div className="border border-border bg-muted/20 rounded-sm p-4 space-y-3" data-testid="model-answer-panel">
+      <div className="overline text-muted-foreground flex items-center gap-1.5">
+        <Eye weight="bold" className="w-3 h-3" /> Model Answer
+      </div>
+      <p className="text-sm leading-relaxed">{q.model_answer}</p>
+      {q.key_points && q.key_points.length > 0 && (
+        <div>
+          <div className="overline text-muted-foreground flex items-center gap-1.5 mb-2">
+            <Star weight="bold" className="w-3 h-3" /> Key Points
+          </div>
+          <ul className="space-y-1.5">
+            {q.key_points.map((kp, i) => (
+              <li key={`kp-${i}`} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[9px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+                  {i + 1}
+                </span>
+                {kp}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============== QUIZ NAVIGATION ============== */
+function QuizNavigation({ currentQ, totalQ, answers, submitted, onPrev, onNext, onSubmit, onReset, onDotClick, questions }) {
+  const answeredCount = Object.keys(answers).filter((k) => answers[k] !== undefined && answers[k] !== "").length;
+
   return (
     <div className="p-4 border-t border-border flex items-center justify-between">
       <Button
@@ -201,20 +449,24 @@ function QuizNavigation({ currentQ, totalQ, answers, submitted, onPrev, onNext, 
       </Button>
 
       <div className="flex items-center gap-1.5">
-        {Array.from({ length: totalQ }).map((_, i) => (
-          <button
-            key={`dot-${i}`}
-            onClick={() => onDotClick(i)}
-            data-testid={`question-dot-${i}`}
-            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-              i === currentQ
-                ? "bg-[hsl(var(--primary))]"
-                : answers[i]
-                ? "bg-[hsl(var(--primary)/0.4)]"
-                : "bg-muted-foreground/20"
-            }`}
-          />
-        ))}
+        {Array.from({ length: totalQ }).map((_, i) => {
+          const qt = questions[i]?.question_type || "mcq";
+          const hasAnswer = answers[i] !== undefined && answers[i] !== "";
+          return (
+            <button
+              key={`dot-${i}`}
+              onClick={() => onDotClick(i)}
+              data-testid={`question-dot-${i}`}
+              className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                i === currentQ
+                  ? "bg-[hsl(var(--primary))]"
+                  : hasAnswer
+                  ? isAutoGradable(qt) ? "bg-[hsl(var(--primary)/0.4)]" : "bg-amber-500/50"
+                  : "bg-muted-foreground/20"
+              }`}
+            />
+          );
+        })}
       </div>
 
       {submitted ? (
@@ -231,7 +483,7 @@ function QuizNavigation({ currentQ, totalQ, answers, submitted, onPrev, onNext, 
           size="sm"
           className="rounded-sm bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold"
           onClick={onSubmit}
-          disabled={Object.keys(answers).length < totalQ}
+          disabled={answeredCount < totalQ}
         >
           Submit Answers
         </Button>
@@ -240,25 +492,58 @@ function QuizNavigation({ currentQ, totalQ, answers, submitted, onPrev, onNext, 
   );
 }
 
+/* ============== QUIZ VIEW ============== */
 function QuizView({ test }) {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [showModels, setShowModels] = useState({});
 
   const questions = test.questions;
   const q = questions[currentQ];
   const totalQ = questions.length;
+  const qt = q.question_type || "mcq";
 
+  const gradableQs = questions.filter((qu) => isAutoGradable(qu.question_type || "mcq"));
+  const subjectiveQs = questions.filter((qu) => !isAutoGradable(qu.question_type || "mcq"));
   const score = submitted
-    ? Object.entries(answers).filter(
-        ([idx, ans]) => questions[parseInt(idx)]?.correct_answer === ans
-      ).length
+    ? gradableQs.filter((qu, origIdx) => {
+        const idx = questions.indexOf(qu);
+        return String(answers[idx]).trim() === String(qu.correct_answer).trim();
+      }).length
+    : 0;
+  const attempted = submitted
+    ? subjectiveQs.filter((qu) => {
+        const idx = questions.indexOf(qu);
+        return answers[idx] !== undefined && answers[idx] !== "";
+      }).length
     : 0;
 
-  const handleSelect = (label) => {
+  const handleSelect = (val) => {
     if (submitted) return;
-    setAnswers((prev) => ({ ...prev, [currentQ]: label }));
+    setAnswers((prev) => ({ ...prev, [currentQ]: val }));
   };
+
+  const toggleModel = (idx) => {
+    setShowModels((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  function renderQuestion() {
+    switch (qt) {
+      case "mcq":
+        return <MCQQuestion q={q} answer={answers[currentQ]} submitted={submitted} onSelect={handleSelect} />;
+      case "true_false":
+        return <TrueFalseQuestion q={q} answer={answers[currentQ]} submitted={submitted} onSelect={handleSelect} />;
+      case "numerical":
+        return <NumericalQuestion q={q} answer={answers[currentQ]} submitted={submitted} onAnswer={handleSelect} />;
+      case "short_answer":
+        return <ShortAnswerQuestion q={q} answer={answers[currentQ]} submitted={submitted} onAnswer={handleSelect} showModel={showModels[currentQ]} />;
+      case "long_answer":
+        return <LongAnswerQuestion q={q} answer={answers[currentQ]} submitted={submitted} onAnswer={handleSelect} showModel={showModels[currentQ]} />;
+      default:
+        return <MCQQuestion q={q} answer={answers[currentQ]} submitted={submitted} onSelect={handleSelect} />;
+    }
+  }
 
   return (
     <div data-testid="quiz-view" className="border border-border bg-card">
@@ -277,10 +562,16 @@ function QuizView({ test }) {
           </h3>
         </div>
         <div className="flex items-center gap-3">
-          {submitted && (
+          {submitted && gradableQs.length > 0 && (
             <Badge data-testid="quiz-score" variant="outline" className="rounded-sm px-3 py-1.5 text-sm font-bold gap-1.5">
               <Trophy weight="bold" className="w-4 h-4 text-[hsl(var(--primary))]" />
-              {score}/{totalQ}
+              {score}/{gradableQs.length}
+            </Badge>
+          )}
+          {submitted && subjectiveQs.length > 0 && (
+            <Badge data-testid="quiz-attempted" variant="outline" className="rounded-sm px-3 py-1.5 text-sm font-bold gap-1.5 text-amber-500 border-amber-500/30">
+              <PencilSimpleLine weight="bold" className="w-4 h-4" />
+              {attempted} practiced
             </Badge>
           )}
           <div className="font-mono text-xs text-muted-foreground">{currentQ + 1} / {totalQ}</div>
@@ -297,26 +588,22 @@ function QuizView({ test }) {
           transition={{ duration: 0.2 }}
           className="p-6"
         >
+          <div className="flex items-center gap-2 mb-4">
+            <QTypeBadge type={qt} />
+            {!isAutoGradable(qt) && (
+              <span className="text-[10px] font-medium text-muted-foreground">Self-evaluated</span>
+            )}
+          </div>
+
           <p className="text-base font-medium mb-6" data-testid={`question-${currentQ}`}>
             <span className="font-mono text-[hsl(var(--primary))] mr-2">Q{currentQ + 1}.</span>
             {q.question}
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {q.options.map((opt) => (
-              <OptionButton
-                key={opt.label}
-                opt={opt}
-                isSelected={answers[currentQ] === opt.label}
-                isCorrect={submitted && opt.label === q.correct_answer}
-                isWrong={submitted && answers[currentQ] === opt.label && opt.label !== q.correct_answer}
-                submitted={submitted}
-                onSelect={handleSelect}
-              />
-            ))}
-          </div>
+          {renderQuestion()}
 
-          {submitted && (
+          {/* Explanation for auto-gradable */}
+          {submitted && isAutoGradable(qt) && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -327,6 +614,27 @@ function QuizView({ test }) {
               <p className="text-sm">{q.explanation}</p>
             </motion.div>
           )}
+
+          {/* Show/hide model answer for subjective */}
+          {submitted && !isAutoGradable(qt) && (
+            <div className="mt-4">
+              <Button
+                data-testid={`toggle-model-${currentQ}`}
+                variant="outline"
+                size="sm"
+                className="rounded-sm gap-1.5 text-xs"
+                onClick={() => toggleModel(currentQ)}
+              >
+                <Eye weight="bold" className="w-3.5 h-3.5" />
+                {showModels[currentQ] ? "Hide" : "Show"} Model Answer
+              </Button>
+              {showModels[currentQ] && q.model_answer && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
+                  <ModelAnswerPanel q={q} />
+                </motion.div>
+              )}
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 
@@ -335,16 +643,18 @@ function QuizView({ test }) {
         totalQ={totalQ}
         answers={answers}
         submitted={submitted}
+        questions={questions}
         onPrev={() => setCurrentQ((p) => p - 1)}
         onNext={() => setCurrentQ((p) => p + 1)}
         onSubmit={() => { setSubmitted(true); setCurrentQ(0); }}
-        onReset={() => { setAnswers({}); setSubmitted(false); setCurrentQ(0); }}
+        onReset={() => { setAnswers({}); setSubmitted(false); setShowModels({}); setCurrentQ(0); }}
         onDotClick={setCurrentQ}
       />
     </div>
   );
 }
 
+/* ============== SIDEBAR ============== */
 function PracticeHistory({ tests, onSelect, onDelete, activeId }) {
   return (
     <div
@@ -366,48 +676,57 @@ function PracticeHistory({ tests, onSelect, onDelete, activeId }) {
             </p>
           )}
 
-          {tests.map((test) => (
-            <div
-              key={test.id}
-              className={`group p-3 mb-1 cursor-pointer transition-colors rounded-sm ${
-                activeId === test.id
-                  ? "bg-[hsl(var(--primary)/0.08)] border border-[hsl(var(--primary)/0.2)]"
-                  : "hover:bg-muted border border-transparent"
-              }`}
-              onClick={() => onSelect(test)}
-              data-testid={`saved-test-${test.id}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {test.subject}
-                  </span>
-                  <p className="text-sm font-medium truncate">{test.chapter}</p>
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    {test.num_questions} Qs
-                  </span>
+          {tests.map((test) => {
+            const typeLabel = TYPE_LABELS[test.question_type] || "MCQ";
+            return (
+              <div
+                key={test.id}
+                className={`group p-3 mb-1 cursor-pointer transition-colors rounded-sm ${
+                  activeId === test.id
+                    ? "bg-[hsl(var(--primary)/0.08)] border border-[hsl(var(--primary)/0.2)]"
+                    : "hover:bg-muted border border-transparent"
+                }`}
+                onClick={() => onSelect(test)}
+                data-testid={`saved-test-${test.id}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      {test.subject}
+                    </span>
+                    <p className="text-sm font-medium truncate">{test.chapter}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))]">
+                        {typeLabel}
+                      </span>
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        {test.num_questions} Qs
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    data-testid={`delete-test-${test.id}`}
+                    variant="ghost"
+                    size="icon"
+                    className="opacity-0 group-hover:opacity-100 h-7 w-7 rounded-sm shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(test.id);
+                    }}
+                  >
+                    <Trash className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <Button
-                  data-testid={`delete-test-${test.id}`}
-                  variant="ghost"
-                  size="icon"
-                  className="opacity-0 group-hover:opacity-100 h-7 w-7 rounded-sm shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(test.id);
-                  }}
-                >
-                  <Trash className="w-3.5 h-3.5" />
-                </Button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </ScrollArea>
     </div>
   );
 }
 
+/* ============== MAIN PAGE ============== */
 export default function PracticePage() {
   const [tests, setTests] = useState([]);
   const [activeTest, setActiveTest] = useState(null);
@@ -426,13 +745,14 @@ export default function PracticePage() {
     loadTests();
   }, []);
 
-  const handleGenerate = async (subject, chapter, numQuestions) => {
+  const handleGenerate = async (subject, chapter, numQuestions, questionType) => {
     setIsLoading(true);
     try {
       const res = await axios.post(`${API}/practice/generate`, {
         subject,
         chapter,
         num_questions: numQuestions,
+        question_type: questionType,
       });
       setActiveTest(res.data);
       setTests((prev) => [res.data, ...prev]);
@@ -441,6 +761,7 @@ export default function PracticePage() {
         type: "quiz",
         subject,
         topic: chapter,
+        question_type: questionType,
         question_count: numQuestions,
         questions: res.data.questions,
         timestamp: new Date().toISOString(),
@@ -526,7 +847,7 @@ export default function PracticePage() {
                     Test your knowledge
                   </h3>
                   <p className="text-sm text-muted-foreground text-center max-w-sm">
-                    Generate AI-powered MCQ practice tests with instant feedback and explanations.
+                    Generate practice tests with MCQs, True/False, Numerical, Short and Long Answer questions.
                   </p>
                 </motion.div>
               )}

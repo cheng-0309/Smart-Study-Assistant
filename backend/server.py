@@ -214,7 +214,34 @@ async def generate_notes_with_ai(subject: str, chapter: str, note_type: str = "d
             cleaned = cleaned.split("\n", 1)[1]
             cleaned = cleaned.rsplit("```", 1)[0]
         parsed = json.loads(cleaned)
-        return NoteContent(**parsed)
+        content = NoteContent(**parsed)
+
+        # Enforce 1800 word limit on main_content
+        total_words = 0
+        trimmed_sections = []
+        for section in content.main_content:
+            section_words = sum(len(p.split()) for p in section.points)
+            section_words += len(section.heading.split())
+            if total_words + section_words > 1800:
+                remaining = 1800 - total_words
+                if remaining > 20:
+                    trimmed_points = []
+                    for p in section.points:
+                        pw = len(p.split())
+                        if total_words + pw <= 1800:
+                            trimmed_points.append(p)
+                            total_words += pw
+                        else:
+                            break
+                    if trimmed_points:
+                        section.points = trimmed_points
+                        trimmed_sections.append(section)
+                break
+            total_words += section_words
+            trimmed_sections.append(section)
+        content.main_content = trimmed_sections
+
+        return content
     except (json.JSONDecodeError, Exception) as e:
         logger.error(f"Failed to parse AI response: {e}")
         logger.error(f"Raw response: {response}")

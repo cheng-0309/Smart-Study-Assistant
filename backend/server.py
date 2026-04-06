@@ -162,7 +162,7 @@ SYSTEM_PROMPT = """You are a study assistant that generates structured study not
 Rules:
 - title: The topic name as a clear heading
 - introduction: 2-3 concise sentences introducing the topic
-- main_content: 2-5 sections with clear headings and 2-5 bullet points each
+- main_content: 2-5 sections with clear headings and 2-5 bullet points each. IMPORTANT: The entire main_content section must NOT exceed 1800 words total.
 - examples: 1-4 practical examples (if applicable to the subject, otherwise empty array [])
 - key_points: MANDATORY. Must contain 5-10 short, exam-relevant bullet points highlighting the most important ideas
 - summary: 2-3 concise sentences wrapping up the topic

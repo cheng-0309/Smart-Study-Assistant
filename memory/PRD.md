@@ -23,7 +23,7 @@ Build a study assistant that generates structured study notes based on Subject a
 - **Practice Tests (MCQs)** — Subject, Chapter, # Questions → Interactive quiz with scoring & explanations
 - **Unified History** — Aggregated timeline with filter tabs (All/Notes/Plans/Exam Prep/Quizzes), expandable details, delete
 - **Export** — PDF and Text for notes
-- **Themes** — Light/Dark toggle with localStorage persistence
+- **Neon-inspired UI** — CSS variable-based theming with cyan/purple neon accents (dark: vivid glows; light: muted tones), glass header, hover glow transitions
 
 ### Technical Quality
 - Backward-compatible note rendering (old notes with key_concepts still display)

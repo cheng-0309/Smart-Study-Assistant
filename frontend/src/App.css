@@ -1,16 +1,22 @@
-/* Swiss Control Room — Utility Styles */
+/* Neon Control Room — Utility Styles */
 
+/* ---- Glass Header ---- */
 .glass-header {
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  background-color: var(--header-bg);
+  border-bottom: 1px solid hsl(var(--border));
+}
+.dark .glass-header {
+  border-bottom-color: hsl(var(--neon-cyan) / 0.08);
 }
 
+/* ---- Bento Grid ---- */
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 0;
 }
-
 .bento-hero { grid-column: span 8; }
 .bento-square { grid-column: span 4; }
 .bento-tall { grid-column: span 4; grid-row: span 2; }
@@ -28,7 +34,7 @@
   }
 }
 
-/* Overline label style */
+/* ---- Overline label ---- */
 .overline {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
@@ -37,41 +43,134 @@
   font-weight: 700;
 }
 
-/* Loading pulse */
+/* ---- Loading pulse ---- */
 @keyframes pulse-bar {
   0%, 100% { opacity: 0.3; transform: scaleY(0.6); }
   50% { opacity: 1; transform: scaleY(1); }
 }
-
 .loading-bar {
   animation: pulse-bar 1s ease-in-out infinite;
 }
 
-/* Card hover lift — subtle, no transform shift */
+/* ---- Neon Card ---- */
+.neon-card {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  box-shadow: var(--card-glow);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+.neon-card:hover {
+  border-color: hsl(var(--neon-cyan) / 0.25);
+  box-shadow: var(--glow-sm);
+  transform: translateY(-1px);
+}
+.dark .neon-card:hover {
+  border-color: hsl(var(--neon-cyan) / 0.2);
+  box-shadow: var(--glow-md);
+}
+
+/* ---- Card lift (existing, neon-ified) ---- */
 .card-lift {
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 .card-lift:hover {
-  border-color: hsl(var(--primary) / 0.2);
-  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+  border-color: hsl(var(--neon-cyan) / 0.2);
+  box-shadow: var(--glow-sm);
+  transform: translateY(-1px);
 }
 .dark .card-lift:hover {
-  border-color: hsl(var(--primary) / 0.25);
-  box-shadow: 0 1px 8px rgba(0,0,0,0.2);
+  border-color: hsl(var(--neon-cyan) / 0.15);
+  box-shadow: var(--glow-md);
 }
 
-/* Button hover polish */
+/* ---- Neon Button Glow on Hover ---- */
+.neon-btn {
+  position: relative;
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
+}
+.neon-btn:hover:not(:disabled) {
+  box-shadow: var(--glow-primary);
+  transform: scale(1.02);
+}
+.neon-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* ---- Neon accent button ---- */
+.neon-btn-accent:hover:not(:disabled) {
+  box-shadow: var(--glow-accent);
+  transform: scale(1.02);
+}
+
+/* ---- Neon Input Focus ---- */
+.neon-input:focus-within {
+  border-color: hsl(var(--neon-cyan) / 0.5) !important;
+  box-shadow: 0 0 0 1px hsl(var(--neon-cyan) / 0.2), var(--glow-sm);
+}
+
+/* ---- Neon Border Glow ---- */
+.neon-border {
+  border: 1px solid hsl(var(--border));
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.neon-border:hover {
+  border-color: hsl(var(--neon-cyan) / 0.3);
+  box-shadow: var(--glow-sm);
+}
+
+/* ---- Neon Badge ---- */
+.neon-badge {
+  background: hsl(var(--neon-cyan) / 0.08);
+  color: hsl(var(--neon-cyan));
+  border: 1px solid hsl(var(--neon-cyan) / 0.2);
+}
+.dark .neon-badge {
+  background: hsl(var(--neon-cyan) / 0.1);
+  text-shadow: 0 0 8px hsl(var(--neon-cyan) / 0.3);
+}
+.neon-badge-purple {
+  background: hsl(var(--neon-purple) / 0.08);
+  color: hsl(var(--neon-purple));
+  border: 1px solid hsl(var(--neon-purple) / 0.2);
+}
+.dark .neon-badge-purple {
+  background: hsl(var(--neon-purple) / 0.1);
+  text-shadow: 0 0 8px hsl(var(--neon-purple) / 0.3);
+}
+
+/* ---- Neon Text Glow (dark mode only) ---- */
+.dark .neon-text {
+  text-shadow: 0 0 10px hsl(var(--neon-cyan) / 0.4);
+}
+.dark .neon-text-purple {
+  text-shadow: 0 0 10px hsl(var(--neon-purple) / 0.4);
+}
+
+/* ---- Neon Divider ---- */
+.neon-divider {
+  border-color: hsl(var(--border));
+  transition: border-color 0.3s ease;
+}
+.dark .neon-divider {
+  border-color: hsl(var(--neon-cyan) / 0.06);
+}
+
+/* ---- Global Button polish ---- */
 button:not(:disabled) {
-  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease;
 }
 
-/* Consistent focus ring */
+/* ---- Focus ring — neon ---- */
 *:focus-visible {
-  outline: 2px solid hsl(var(--primary) / 0.5);
+  outline: 2px solid hsl(var(--neon-cyan) / 0.5);
   outline-offset: 2px;
 }
+.dark *:focus-visible {
+  outline-color: hsl(var(--neon-cyan) / 0.4);
+  box-shadow: 0 0 8px hsl(var(--neon-cyan) / 0.15);
+}
 
-/* Nav active indicator */
+/* ---- Nav active indicator — neon ---- */
 .nav-active-indicator {
   position: relative;
 }
@@ -85,4 +184,46 @@ button:not(:disabled) {
   height: 2px;
   background: hsl(var(--primary));
   border-radius: 1px;
+}
+.dark .nav-active-indicator::after {
+  box-shadow: 0 0 8px hsl(var(--neon-cyan) / 0.5);
+}
+
+/* ---- Neon sidebar item ---- */
+.neon-sidebar-item {
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.neon-sidebar-item:hover {
+  background: hsl(var(--muted));
+}
+.neon-sidebar-active {
+  background: hsl(var(--neon-cyan) / 0.06);
+  border: 1px solid hsl(var(--neon-cyan) / 0.15);
+}
+.dark .neon-sidebar-active {
+  box-shadow: inset 0 0 12px hsl(var(--neon-cyan) / 0.04);
+}
+
+/* ---- Subtle fade-in animation ---- */
+@keyframes neon-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.neon-fade-in {
+  animation: neon-fade-in 0.35s ease-out forwards;
+}
+
+/* ---- Neon Pulse (for loading/active states) ---- */
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 4px hsl(var(--neon-cyan) / 0.1); }
+  50% { box-shadow: 0 0 12px hsl(var(--neon-cyan) / 0.2); }
+}
+.dark .neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
 }

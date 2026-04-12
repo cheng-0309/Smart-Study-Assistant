@@ -73,6 +73,7 @@ Build a study assistant that generates structured study notes based on Subject a
 - [x] Unified History
 - [x] Exam Preparation Planner
 - [x] Home Screen Landing Page (Hero, Features, How It Works, CTA) — Feb 2026
+- [x] Navigation Refinement: Minimal header on landing, full nav on feature pages, logo-based home navigation — Feb 2026
 
 ### P1 (Important)
 - [ ] Study Analytics Dashboard (study time, notes generated, quiz accuracy)

@@ -69,6 +69,7 @@ class PlannerDay(BaseModel):
     topic: str
     tasks: List[str] = []
     duration_hours: float = 0
+    goal: str = ""
 
 class StudyPlan(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -77,6 +78,7 @@ class StudyPlan(BaseModel):
     hours_per_day: float
     num_days: int
     days: List[PlannerDay] = []
+    plain_text: str = ""
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class PlannerRequest(BaseModel):
@@ -255,12 +257,14 @@ PLANNER_SYSTEM_PROMPT = """You are a study planner assistant. When given a topic
       "day": 1,
       "topic": "Subtopic or focus area for this day",
       "tasks": ["Task 1", "Task 2", "Task 3"],
-      "duration_hours": 2.0
+      "duration_hours": 2.0,
+      "goal": "Clear one-line goal for the day"
     }
   ]
 }
 
 Rules:
+- Each day must have a clear goal (one sentence describing the day's objective)
 - Each day should have 2-4 specific tasks
 - Tasks should be actionable (Read, Practice, Solve, Review, Summarize)
 - duration_hours per day should roughly match the hours_per_day requested
@@ -297,6 +301,22 @@ async def generate_planner_with_ai(topic: str, hours_per_day: float, num_days: i
     except (json.JSONDecodeError, KeyError, Exception) as e:
         logger.error(f"Failed to parse planner response: {e}")
         raise HTTPException(status_code=500, detail="Failed to parse AI response")
+
+
+def format_plan_plain_text(days: List[PlannerDay]) -> str:
+    lines = []
+    for day in days:
+        lines.append(f"=== Day {day.day} ===")
+        lines.append(f"Topic: {day.topic}")
+        lines.append(f"Time: {day.duration_hours} hrs")
+        lines.append("")
+        lines.append("Tasks:")
+        for task in day.tasks:
+            lines.append(f"* {task}")
+        lines.append("")
+        lines.append(f"Goal: {day.goal}")
+        lines.append("")
+    return "\n".join(lines).strip()
 
 
 PRACTICE_SYSTEM_PROMPT = """You are a test generator for students. Generate questions of the specified types. Return ONLY valid JSON in this format:
@@ -530,7 +550,8 @@ async def generate_planner(req: PlannerRequest):
         topic=req.topic,
         hours_per_day=req.hours_per_day,
         num_days=req.num_days,
-        days=days
+        days=days,
+        plain_text=format_plan_plain_text(days)
     )
     doc = plan.model_dump()
     await db.study_plans.insert_one(doc)

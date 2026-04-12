@@ -14,6 +14,8 @@ import {
   HourglassHigh,
   ArrowsClockwise,
   GraduationCap,
+  Target,
+  CopySimple,
 } from "@phosphor-icons/react";
 import Header from "../components/Header";
 import ExamPlanForm from "../components/ExamPlanForm";
@@ -182,24 +184,46 @@ function PlanSummary({ plan }) {
 function PlanDisplay({ plan }) {
   if (!plan) return null;
 
+  const handleCopyPlainText = () => {
+    if (plan.plain_text) {
+      navigator.clipboard.writeText(plan.plain_text);
+      toast.success("Copied to clipboard — paste into Notion!");
+    }
+  };
+
   return (
     <div data-testid="plan-display" className="border border-border bg-card">
       <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-2 mb-2">
-          <CalendarDots weight="bold" className="w-5 h-5 text-[hsl(var(--primary))]" />
-          <h2 className="text-lg font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
-            Study Plan
-          </h2>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarDots weight="bold" className="w-5 h-5 text-[hsl(var(--primary))]" />
+              <h2 className="text-lg font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+                Study Plan
+              </h2>
+            </div>
+            <div className="overline text-muted-foreground mb-1">
+              {plan.num_days}-Day Plan · {plan.hours_per_day}h/day
+            </div>
+            <h3
+              className="text-xl md:text-2xl font-black tracking-tight"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              {plan.topic}
+            </h3>
+          </div>
+          {plan.plain_text && (
+            <Button
+              data-testid="copy-plan-btn"
+              variant="outline"
+              className="rounded-sm h-9 gap-2 border-border shrink-0"
+              onClick={handleCopyPlainText}
+            >
+              <CopySimple weight="bold" className="w-4 h-4" />
+              Copy for Notion
+            </Button>
+          )}
         </div>
-        <div className="overline text-muted-foreground mb-1">
-          {plan.num_days}-Day Plan · {plan.hours_per_day}h/day
-        </div>
-        <h3
-          className="text-xl md:text-2xl font-black tracking-tight"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          {plan.topic}
-        </h3>
       </div>
 
       <PlanSummary plan={plan} />
@@ -252,6 +276,12 @@ function PlanDisplay({ plan }) {
                   </li>
                 ))}
               </ul>
+              {day.goal && (
+                <div className="flex items-start gap-2 mt-2.5 pt-2 border-t border-border/50">
+                  <Target weight="bold" className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[hsl(var(--accent))]" />
+                  <span className="text-xs font-medium text-[hsl(var(--accent))]">{day.goal}</span>
+                </div>
+              )}
             </div>
           </motion.div>
         ))}

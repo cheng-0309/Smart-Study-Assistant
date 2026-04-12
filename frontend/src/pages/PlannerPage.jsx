@@ -83,7 +83,7 @@ function PlannerForm({ onGenerate, isLoading }) {
             placeholder="e.g. Organic Chemistry, World War II"
             value={topic}
             onChange={(e) => { setTopic(e.target.value); if (error) setError(""); }}
-            className={`rounded-sm border-border h-11 bg-background ${
+            className={`rounded-lg border-border h-11 bg-background ${
               error && !topic.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}
             disabled={isLoading}
@@ -93,10 +93,10 @@ function PlannerForm({ onGenerate, isLoading }) {
         <div className="space-y-2">
           <Label className="text-sm font-medium">Hours / Day <span className="text-[hsl(var(--primary))]">*</span></Label>
           <Select value={hoursPerDay} onValueChange={setHoursPerDay} disabled={isLoading}>
-            <SelectTrigger data-testid="planner-hours-select" className="rounded-sm h-11 bg-background">
+            <SelectTrigger data-testid="planner-hours-select" className="rounded-lg h-11 bg-background">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-sm">
+            <SelectContent className="rounded-lg">
               {[1, 1.5, 2, 2.5, 3, 4, 5, 6].map((h) => (
                 <SelectItem key={h} value={String(h)}>
                   {h} {h === 1 ? "hour" : "hours"}
@@ -109,10 +109,10 @@ function PlannerForm({ onGenerate, isLoading }) {
         <div className="space-y-2">
           <Label className="text-sm font-medium">Duration <span className="text-[hsl(var(--primary))]">*</span></Label>
           <Select value={numDays} onValueChange={setNumDays} disabled={isLoading}>
-            <SelectTrigger data-testid="planner-days-select" className="rounded-sm h-11 bg-background">
+            <SelectTrigger data-testid="planner-days-select" className="rounded-lg h-11 bg-background">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-sm">
+            <SelectContent className="rounded-lg">
               {[3, 5, 7, 10, 14, 21, 30].map((d) => (
                 <SelectItem key={d} value={String(d)}>
                   {d} days
@@ -124,7 +124,7 @@ function PlannerForm({ onGenerate, isLoading }) {
       </div>
 
       {error && (
-        <div data-testid="planner-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-sm">
+        <div data-testid="planner-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-lg">
           <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
           {error}
         </div>
@@ -134,7 +134,7 @@ function PlannerForm({ onGenerate, isLoading }) {
         data-testid="generate-plan-btn"
         type="submit"
         disabled={isLoading}
-        className="rounded-sm h-11 px-8 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold tracking-wide transition-opacity"
+        className="rounded-lg h-11 px-8 gradient-btn tracking-wide"
       >
         {isLoading ? (
           <>
@@ -216,7 +216,7 @@ function PlanDisplay({ plan }) {
             <Button
               data-testid="copy-plan-btn"
               variant="outline"
-              className="rounded-sm h-9 gap-2 border-border shrink-0"
+              className="rounded-lg h-9 gap-2 border-border shrink-0"
               onClick={handleCopyPlainText}
             >
               <CopySimple weight="bold" className="w-4 h-4" />
@@ -247,7 +247,7 @@ function PlanDisplay({ plan }) {
             data-testid={`plan-day-${day.day}`}
           >
             <div className="shrink-0 flex flex-col items-center">
-              <div className="w-10 h-10 rounded-sm bg-[hsl(var(--primary)/0.1)] flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-[hsl(var(--primary)/0.1)] flex items-center justify-center">
                 <span className="font-mono text-xs font-bold text-[hsl(var(--primary))]">
                   D{String(day.day).padStart(2, "0")}
                 </span>
@@ -318,7 +318,7 @@ function PlannerHistory({ plans, examPlans, onSelect, onDelete, activeId, active
           {displayPlans.map((plan) => (
             <div
               key={plan.id}
-              className={`group p-3 mb-1 cursor-pointer transition-colors rounded-sm ${
+              className={`group p-3 mb-1 cursor-pointer transition-colors rounded-lg ${
                 activeId === plan.id
                   ? "bg-[hsl(var(--primary)/0.08)] border border-[hsl(var(--primary)/0.2)]"
                   : "hover:bg-muted border border-transparent"
@@ -342,7 +342,7 @@ function PlannerHistory({ plans, examPlans, onSelect, onDelete, activeId, active
                   data-testid={`delete-plan-${plan.id}`}
                   variant="ghost"
                   size="icon"
-                  className="opacity-0 group-hover:opacity-100 h-7 w-7 rounded-sm shrink-0 text-muted-foreground hover:text-destructive"
+                  className="opacity-0 group-hover:opacity-100 h-7 w-7 rounded-lg shrink-0 text-muted-foreground hover:text-destructive"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(plan.id, isExam);
@@ -473,10 +473,10 @@ export default function PlannerPage() {
           <div className="max-w-[960px] mx-auto py-6 px-4 md:px-6">
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-0">
-              <TabsList className="mb-4 rounded-sm" data-testid="planner-tabs">
+              <TabsList className="mb-4 rounded-lg" data-testid="planner-tabs">
                 <TabsTrigger
                   value="regular"
-                  className="rounded-sm gap-1.5 text-xs"
+                  className="rounded-lg gap-1.5 text-xs"
                   data-testid="tab-regular"
                 >
                   <CalendarDots weight="bold" className="w-3.5 h-3.5" />
@@ -484,7 +484,7 @@ export default function PlannerPage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="exam"
-                  className="rounded-sm gap-1.5 text-xs"
+                  className="rounded-lg gap-1.5 text-xs"
                   data-testid="tab-exam"
                 >
                   <GraduationCap weight="bold" className="w-3.5 h-3.5" />
@@ -513,7 +513,7 @@ export default function PlannerPage() {
                   <div className="space-y-4">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div key={`skel-${i}`} className="flex gap-4">
-                        <div className="w-10 h-10 bg-muted rounded-sm loading-bar" style={{ animationDelay: `${i * 0.15}s` }} />
+                        <div className="w-10 h-10 bg-muted rounded-lg loading-bar" style={{ animationDelay: `${i * 0.15}s` }} />
                         <div className="flex-1 space-y-2">
                           <div className="h-3 bg-muted rounded w-1/3 loading-bar" style={{ animationDelay: `${i * 0.15 + 0.05}s` }} />
                           <div className="h-2.5 bg-muted rounded w-2/3 loading-bar" style={{ animationDelay: `${i * 0.15 + 0.1}s` }} />

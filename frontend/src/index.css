@@ -12,74 +12,88 @@
     --font-sans: 'DM Sans', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
 
-    /* Light — muted neon palette */
-    --background: 220 20% 97%;
-    --foreground: 225 25% 12%;
-    --card: 220 20% 100%;
-    --card-foreground: 225 25% 12%;
-    --popover: 220 20% 100%;
-    --popover-foreground: 225 25% 12%;
-    --primary: 185 90% 40%;
+    /* Light — soft premium palette */
+    --background: 240 10% 96%;
+    --foreground: 240 15% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 15% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 15% 10%;
+    --primary: 245 72% 59%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 92%;
-    --secondary-foreground: 225 25% 12%;
-    --muted: 220 15% 92%;
-    --muted-foreground: 220 10% 42%;
-    --accent: 260 60% 58%;
+    --secondary: 240 8% 92%;
+    --secondary-foreground: 240 15% 10%;
+    --muted: 240 8% 92%;
+    --muted-foreground: 240 6% 45%;
+    --accent: 270 60% 58%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
-    --ring: 185 90% 40%;
-    --radius: 0.375rem;
+    --border: 240 8% 88%;
+    --input: 240 8% 88%;
+    --ring: 245 72% 59%;
+    --radius: 0.625rem;
 
-    /* Neon glow tokens — light mode (subtle) */
-    --neon-cyan: 185 90% 40%;
-    --neon-purple: 260 60% 58%;
-    --neon-blue: 215 90% 55%;
-    --glow-sm: 0 0 6px hsl(185 90% 40% / 0.15);
-    --glow-md: 0 0 12px hsl(185 90% 40% / 0.12), 0 0 4px hsl(260 60% 58% / 0.08);
-    --glow-lg: 0 0 20px hsl(185 90% 40% / 0.15), 0 0 8px hsl(260 60% 58% / 0.1);
-    --glow-primary: 0 0 10px hsl(185 90% 40% / 0.2);
-    --glow-accent: 0 0 10px hsl(260 60% 58% / 0.15);
-    --header-bg: rgba(247, 249, 252, 0.8);
-    --card-glow: 0 1px 12px hsl(185 90% 40% / 0.06);
+    /* Gradient & glow tokens — light */
+    --gradient-primary: linear-gradient(135deg, hsl(245 72% 59%), hsl(270 60% 58%));
+    --gradient-secondary: linear-gradient(135deg, hsl(195 80% 50%), hsl(270 60% 58%));
+    --gradient-text: linear-gradient(135deg, hsl(245 72% 50%), hsl(280 65% 52%), hsl(195 80% 45%));
+    --glow-sm: 0 2px 12px hsl(245 72% 59% / 0.08);
+    --glow-md: 0 4px 20px hsl(245 72% 59% / 0.1), 0 0 8px hsl(270 60% 58% / 0.06);
+    --glow-lg: 0 8px 32px hsl(245 72% 59% / 0.12), 0 0 12px hsl(270 60% 58% / 0.08);
+    --glow-primary: 0 0 16px hsl(245 72% 59% / 0.15);
+    --glow-accent: 0 0 16px hsl(270 60% 58% / 0.12);
+    --header-bg: rgba(244, 244, 248, 0.75);
+    --card-glow: 0 1px 3px hsl(240 15% 10% / 0.04), 0 1px 8px hsl(245 72% 59% / 0.03);
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.5);
+
+    /* Blob colors */
+    --blob-1: hsl(245 72% 59% / 0.06);
+    --blob-2: hsl(270 60% 58% / 0.05);
+    --blob-3: hsl(195 80% 50% / 0.04);
   }
 
   .dark {
-    /* Dark — vivid neon palette */
-    --background: 225 30% 6%;
-    --foreground: 210 20% 92%;
-    --card: 225 25% 10%;
-    --card-foreground: 210 20% 92%;
-    --popover: 225 25% 10%;
-    --popover-foreground: 210 20% 92%;
-    --primary: 185 100% 55%;
-    --primary-foreground: 225 30% 6%;
-    --secondary: 225 20% 15%;
-    --secondary-foreground: 210 20% 92%;
-    --muted: 225 20% 15%;
-    --muted-foreground: 220 15% 55%;
-    --accent: 260 80% 68%;
-    --accent-foreground: 225 30% 6%;
-    --destructive: 0 63% 40%;
+    /* Dark — deep premium palette */
+    --background: 240 20% 4%;
+    --foreground: 240 10% 90%;
+    --card: 240 18% 8%;
+    --card-foreground: 240 10% 90%;
+    --popover: 240 18% 8%;
+    --popover-foreground: 240 10% 90%;
+    --primary: 245 85% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 15% 13%;
+    --secondary-foreground: 240 10% 90%;
+    --muted: 240 15% 13%;
+    --muted-foreground: 240 8% 50%;
+    --accent: 270 75% 68%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 63% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 225 20% 18%;
-    --input: 225 20% 18%;
-    --ring: 185 100% 55%;
+    --border: 240 15% 14%;
+    --input: 240 15% 14%;
+    --ring: 245 85% 67%;
 
-    /* Neon glow tokens — dark mode (vivid) */
-    --neon-cyan: 185 100% 55%;
-    --neon-purple: 260 80% 68%;
-    --neon-blue: 215 100% 60%;
-    --glow-sm: 0 0 8px hsl(185 100% 55% / 0.25);
-    --glow-md: 0 0 16px hsl(185 100% 55% / 0.2), 0 0 6px hsl(260 80% 68% / 0.12);
-    --glow-lg: 0 0 28px hsl(185 100% 55% / 0.25), 0 0 10px hsl(260 80% 68% / 0.15);
-    --glow-primary: 0 0 14px hsl(185 100% 55% / 0.35);
-    --glow-accent: 0 0 14px hsl(260 80% 68% / 0.3);
-    --header-bg: rgba(10, 14, 24, 0.8);
-    --card-glow: 0 1px 16px hsl(185 100% 55% / 0.05);
+    /* Gradient & glow tokens — dark */
+    --gradient-primary: linear-gradient(135deg, hsl(245 85% 67%), hsl(270 75% 68%));
+    --gradient-secondary: linear-gradient(135deg, hsl(195 90% 55%), hsl(270 75% 68%));
+    --gradient-text: linear-gradient(135deg, hsl(245 85% 72%), hsl(280 80% 72%), hsl(195 90% 60%));
+    --glow-sm: 0 2px 12px hsl(245 85% 67% / 0.12);
+    --glow-md: 0 4px 24px hsl(245 85% 67% / 0.15), 0 0 10px hsl(270 75% 68% / 0.1);
+    --glow-lg: 0 8px 40px hsl(245 85% 67% / 0.2), 0 0 16px hsl(270 75% 68% / 0.12);
+    --glow-primary: 0 0 20px hsl(245 85% 67% / 0.25);
+    --glow-accent: 0 0 20px hsl(270 75% 68% / 0.2);
+    --header-bg: rgba(8, 8, 16, 0.7);
+    --card-glow: 0 1px 4px hsl(0 0% 0% / 0.3), 0 0 12px hsl(245 85% 67% / 0.03);
+    --glass-bg: rgba(16, 16, 28, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.06);
+
+    /* Blob colors */
+    --blob-1: hsl(245 85% 67% / 0.07);
+    --blob-2: hsl(270 75% 68% / 0.05);
+    --blob-3: hsl(195 90% 55% / 0.04);
   }
 }
 
@@ -123,17 +137,13 @@
   }
 }
 
-/* Scrollbar — neon themed */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--neon-cyan) / 0.2);
-  border-radius: 3px;
+  background: hsl(var(--primary) / 0.15);
+  border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--neon-cyan) / 0.4);
+  background: hsl(var(--primary) / 0.3);
 }

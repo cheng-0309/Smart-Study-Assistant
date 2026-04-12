@@ -35,7 +35,7 @@ const TYPE_LABELS = { quick_revision: "Quick Revision", detailed: "Detailed", ex
 function SectionLabel({ icon: Icon, label, number }) {
   return (
     <div className="flex items-center gap-3 mb-4">
-      <div className="w-7 h-7 rounded-sm bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
+      <div className="w-7 h-7 rounded-lg bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
         <Icon weight="bold" className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
       </div>
       <div>
@@ -67,19 +67,19 @@ function NoteTitle({ subject, chapter, note }) {
             {chapter}
           </h3>
           <div className="flex items-center gap-2 mt-2.5">
-            <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]" data-testid="note-type-badge">
+            <Badge variant="outline" className="rounded-lg text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]" data-testid="note-type-badge">
               {typeLabel}
             </Badge>
           </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button data-testid="export-btn" variant="outline" className="rounded-sm h-9 gap-2 border-border">
+            <Button data-testid="export-btn" variant="outline" className="rounded-lg h-9 gap-2 border-border">
               <DownloadSimple weight="bold" className="w-4 h-4" />
               Export
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rounded-sm">
+          <DropdownMenuContent align="end" className="rounded-lg">
             <DropdownMenuItem data-testid="export-text-btn" onClick={() => exportAsText(note)} className="gap-2 cursor-pointer">
               <FileText className="w-4 h-4" /> Text File
             </DropdownMenuItem>
@@ -112,7 +112,7 @@ function MainContentSection({ sections }) {
         {sections.map((section, si) => (
           <div key={`section-${section.heading}-${si}`}>
             <h4 className="text-sm font-bold mb-2.5 flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] shrink-0">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-lg bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] shrink-0">
                 {String(si + 1).padStart(2, "0")}
               </span>
               {section.heading}
@@ -139,9 +139,9 @@ function ExamplesSection({ examples }) {
       <SectionLabel icon={Code} label="Examples" number="03" />
       <div className="space-y-3">
         {examples.map((ex, i) => (
-          <div key={`example-${i}`} className="border border-border p-3 bg-background rounded-sm">
+          <div key={`example-${i}`} className="border border-border p-3 bg-background rounded-lg">
             <div className="flex items-start gap-2.5 text-sm">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-lg bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
                 {i + 1}
               </span>
               <span className="leading-relaxed">{ex}</span>
@@ -160,8 +160,8 @@ function KeyPointsSection({ points }) {
       <SectionLabel icon={Star} label="Key Points" number="04" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
         {points.map((point, i) => (
-          <div key={`kp-${point.slice(0, 20)}-${i}`} className="flex items-start gap-3 text-sm leading-relaxed p-2 rounded-sm hover:bg-muted/30 transition-colors">
-            <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+          <div key={`kp-${point.slice(0, 20)}-${i}`} className="flex items-start gap-3 text-sm leading-relaxed p-2 rounded-lg hover:bg-muted/30 transition-colors">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-lg bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
               {String(i + 1).padStart(2, "0")}
             </span>
             {point}

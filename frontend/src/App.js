@@ -7,16 +7,29 @@ import PlannerPage from "./pages/PlannerPage";
 import PracticePage from "./pages/PracticePage";
 import HistoryPage from "./pages/HistoryPage";
 
+function BackgroundBlobs() {
+  return (
+    <div className="bg-blobs" aria-hidden="true">
+      <div className="bg-blob bg-blob-1" />
+      <div className="bg-blob bg-blob-2" />
+      <div className="bg-blob bg-blob-3" />
+    </div>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/planner" element={<PlannerPage />} />
-          <Route path="/practice" element={<PracticePage />} />
-          <Route path="/history" element={<HistoryPage />} />
-        </Routes>
+        <BackgroundBlobs />
+        <div className="relative z-10">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/planner" element={<PlannerPage />} />
+            <Route path="/practice" element={<PracticePage />} />
+            <Route path="/history" element={<HistoryPage />} />
+          </Routes>
+        </div>
       </BrowserRouter>
       <Toaster position="bottom-right" richColors />
     </ThemeProvider>

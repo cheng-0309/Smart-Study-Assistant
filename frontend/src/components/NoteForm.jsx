@@ -64,7 +64,7 @@ export default function NoteForm({ onGenerate, isLoading }) {
             placeholder="e.g. Physics, History, Biology"
             value={subject}
             onChange={(e) => { setSubject(e.target.value); clearError(); }}
-            className={`rounded-sm border-border h-11 bg-background focus:ring-1 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] ${
+            className={`rounded-lg border-border h-11 bg-background focus:ring-1 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] ${
               error && !subject.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}
             disabled={isLoading}
@@ -81,7 +81,7 @@ export default function NoteForm({ onGenerate, isLoading }) {
             placeholder="e.g. Newton's Laws of Motion"
             value={chapter}
             onChange={(e) => { setChapter(e.target.value); clearError(); }}
-            className={`rounded-sm border-border h-11 bg-background focus:ring-1 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] ${
+            className={`rounded-lg border-border h-11 bg-background focus:ring-1 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] ${
               error && !chapter.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}
             disabled={isLoading}
@@ -93,10 +93,10 @@ export default function NoteForm({ onGenerate, isLoading }) {
             Note Type <span className="text-[hsl(var(--primary))]">*</span>
           </Label>
           <Select value={noteType} onValueChange={setNoteType} disabled={isLoading}>
-            <SelectTrigger data-testid="note-type-select" className="rounded-sm h-11 bg-background">
+            <SelectTrigger data-testid="note-type-select" className="rounded-lg h-11 bg-background">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-sm">
+            <SelectContent className="rounded-lg">
               {NOTE_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>
                   {t.label}
@@ -108,7 +108,7 @@ export default function NoteForm({ onGenerate, isLoading }) {
       </div>
 
       {error && (
-        <div data-testid="note-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-sm">
+        <div data-testid="note-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-lg">
           <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
           {error}
         </div>
@@ -118,7 +118,7 @@ export default function NoteForm({ onGenerate, isLoading }) {
         data-testid="generate-btn"
         type="submit"
         disabled={isLoading}
-        className="rounded-sm h-11 px-8 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold tracking-wide transition-opacity"
+        className="rounded-lg h-11 px-8 gradient-btn tracking-wide"
       >
         {isLoading ? (
           <>

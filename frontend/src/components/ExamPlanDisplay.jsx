@@ -91,7 +91,7 @@ export default function ExamPlanDisplay({ plan }) {
           {plan.topics.map((t) => (
             <span
               key={`chip-${t}`}
-              className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.2)] rounded-sm"
+              className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.2)] rounded-lg"
             >
               {t}
             </span>
@@ -127,7 +127,7 @@ export default function ExamPlanDisplay({ plan }) {
               data-testid={`exam-day-${day.day}`}
             >
               <div className="shrink-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-sm bg-[hsl(var(--primary)/0.1)] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-[hsl(var(--primary)/0.1)] flex items-center justify-center">
                   <span className="font-mono text-xs font-bold text-[hsl(var(--primary))]">
                     D{String(day.day).padStart(2, "0")}
                   </span>
@@ -140,7 +140,7 @@ export default function ExamPlanDisplay({ plan }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold uppercase ${pConfig.bg} ${pConfig.color}`}>
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] font-bold uppercase ${pConfig.bg} ${pConfig.color}`}>
                       <PriorityIcon weight="bold" className="w-3 h-3" />
                       {pConfig.label}
                     </span>
@@ -162,7 +162,7 @@ export default function ExamPlanDisplay({ plan }) {
                     {day.topics.map((t) => (
                       <span
                         key={`dt-${day.day}-${t}`}
-                        className="text-[10px] font-medium px-2 py-0.5 bg-muted rounded-sm text-foreground"
+                        className="text-[10px] font-medium px-2 py-0.5 bg-muted rounded-lg text-foreground"
                       >
                         {t}
                       </span>

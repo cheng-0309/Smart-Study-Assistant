@@ -30,7 +30,7 @@ function NoteItem({ note, isActive, onSelect, onDelete }) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       className={`
-        group p-3 mb-1 cursor-pointer transition-colors rounded-sm
+        group p-3 mb-1 cursor-pointer transition-colors rounded-lg
         ${isActive
           ? "bg-[hsl(var(--primary)/0.08)] border border-[hsl(var(--primary)/0.2)]"
           : "hover:bg-muted border border-transparent"
@@ -50,7 +50,7 @@ function NoteItem({ note, isActive, onSelect, onDelete }) {
           <p className="text-sm font-medium truncate leading-tight">{note.chapter}</p>
           <div className="flex items-center gap-1.5 mt-1">
             {typeLabel && (
-              <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))]">
+              <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-lg bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))]">
                 {typeLabel}
               </span>
             )}
@@ -67,7 +67,7 @@ function NoteItem({ note, isActive, onSelect, onDelete }) {
                 data-testid={`delete-note-${note.id}`}
                 variant="ghost"
                 size="icon"
-                className="opacity-0 group-hover:opacity-100 h-7 w-7 rounded-sm shrink-0 text-muted-foreground hover:text-destructive"
+                className="opacity-0 group-hover:opacity-100 h-7 w-7 rounded-lg shrink-0 text-muted-foreground hover:text-destructive"
                 onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
               >
                 <Trash className="w-3.5 h-3.5" />

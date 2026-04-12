@@ -19,10 +19,10 @@ const NAV_ITEMS = [
 function Logo() {
   return (
     <div className="flex items-center gap-3">
-      <div className="w-8 h-8 rounded-md bg-[hsl(var(--primary)/0.1)] flex items-center justify-center">
-        <BookOpenText weight="bold" className="w-5 h-5 text-[hsl(var(--primary))] dark:neon-text" />
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--gradient-primary)" }}>
+        <BookOpenText weight="bold" className="w-4.5 h-4.5 text-white" />
       </div>
-      <span data-testid="app-logo" className="text-lg font-black tracking-tight dark:neon-text" style={{ fontFamily: "var(--font-heading)" }}>
+      <span data-testid="app-logo" className="text-lg font-black tracking-tight gradient-text" style={{ fontFamily: "var(--font-heading)" }}>
         StudyForge
       </span>
     </div>
@@ -44,7 +44,7 @@ function NavBar() {
             variant="ghost"
             size="sm"
             onClick={() => navigate(path)}
-            className={`rounded-md h-9 gap-1.5 text-sm font-medium transition-all ${
+            className={`rounded-lg h-9 gap-1.5 text-sm font-medium transition-all ${
               isActive
                 ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] nav-active-indicator"
                 : "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--primary)/0.05)]"
@@ -63,12 +63,12 @@ function HeaderActions({ onToggleSidebar, sidebarOpen }) {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <TooltipProvider delayDuration={200}>
         {onToggleSidebar && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button data-testid="toggle-sidebar-btn" variant="ghost" size="icon" onClick={onToggleSidebar} className="rounded-md h-9 w-9 hover:bg-[hsl(var(--primary)/0.05)]">
+              <Button data-testid="toggle-sidebar-btn" variant="ghost" size="icon" onClick={onToggleSidebar} className="rounded-lg h-9 w-9 hover:bg-[hsl(var(--primary)/0.05)]">
                 <ClockCounterClockwise className="w-[18px] h-[18px]" />
               </Button>
             </TooltipTrigger>
@@ -82,12 +82,12 @@ function HeaderActions({ onToggleSidebar, sidebarOpen }) {
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="rounded-md h-9 w-9 hover:bg-[hsl(var(--primary)/0.05)]"
+              className="rounded-lg h-9 w-9 hover:bg-[hsl(var(--primary)/0.05)]"
             >
               {theme === "dark" ? (
                 <Sun className="w-[18px] h-[18px] text-amber-400" />
               ) : (
-                <Moon className="w-[18px] h-[18px] text-[hsl(var(--neon-purple))]" />
+                <Moon className="w-[18px] h-[18px] text-[hsl(var(--accent))]" />
               )}
             </Button>
           </TooltipTrigger>

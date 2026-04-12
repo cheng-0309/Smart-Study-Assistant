@@ -74,7 +74,7 @@ function TypeBadge({ type }) {
   const config = TYPE_CONFIG[type];
   const Icon = config.icon;
   return (
-    <Badge variant="outline" className={`rounded-sm gap-1.5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${config.color} ${config.bg} ${config.border}`}>
+    <Badge variant="outline" className={`rounded-lg gap-1.5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${config.color} ${config.bg} ${config.border}`}>
       <Icon weight="bold" className="w-3 h-3" />
       {config.label}
     </Badge>
@@ -92,7 +92,7 @@ function NoteDetail({ data }) {
     <div className="space-y-5">
       {/* Badge */}
       <div className="flex items-center gap-2">
-        <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]">
+        <Badge variant="outline" className="rounded-lg text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]">
           {typeLabel}
         </Badge>
       </div>
@@ -139,7 +139,7 @@ function NoteDetail({ data }) {
           </div>
           <div className="space-y-2">
             {content.examples.map((ex, i) => (
-              <div key={`hex-${i}`} className="p-3 border border-border bg-background rounded-sm text-sm">
+              <div key={`hex-${i}`} className="p-3 border border-border bg-background rounded-lg text-sm">
                 <span className="font-mono text-[hsl(var(--primary))] mr-1.5">{i + 1}.</span> {ex}
               </div>
             ))}
@@ -156,7 +156,7 @@ function NoteDetail({ data }) {
           <ul className="space-y-2">
             {content.key_points.map((kp, i) => (
               <li key={`hkp-${kp.slice(0, 15)}-${i}`} className="flex items-start gap-2.5 text-sm">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-lg bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
                   {i + 1}
                 </span>
                 {kp}
@@ -185,7 +185,7 @@ function NoteDetail({ data }) {
           <ul className="space-y-2">
             {content.key_concepts.map((c, i) => (
               <li key={`kc-${i}`} className="flex items-start gap-2.5 text-sm">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-lg bg-[hsl(var(--primary)/0.08)] font-mono text-[10px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
                   {i + 1}
                 </span>
                 {c}
@@ -209,7 +209,7 @@ function PlanDetail({ data }) {
   const totalHours = data.days.reduce((sum, d) => sum + d.duration_hours, 0);
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-sm border border-border">
+      <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg border border-border">
         <div className="text-center flex-1">
           <div className="font-mono text-base font-bold">{data.num_days}</div>
           <div className="font-mono text-[10px] text-muted-foreground uppercase">Days</div>
@@ -227,8 +227,8 @@ function PlanDetail({ data }) {
       </div>
 
       {data.days.map((day) => (
-        <div key={`day-${day.day}`} className="flex gap-3 p-3 border border-border bg-background rounded-sm">
-          <div className="w-9 h-9 rounded-sm bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
+        <div key={`day-${day.day}`} className="flex gap-3 p-3 border border-border bg-background rounded-lg">
+          <div className="w-9 h-9 rounded-lg bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
             <span className="font-mono text-[10px] font-bold text-[hsl(var(--primary))]">D{String(day.day).padStart(2, "0")}</span>
           </div>
           <div className="flex-1 min-w-0">
@@ -258,16 +258,16 @@ function PracticeDetail({ data }) {
   return (
     <div className="space-y-3">
       {data.question_type && (
-        <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]">
+        <Badge variant="outline" className="rounded-lg text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)]">
           {Q_TYPE_LABELS[data.question_type] || data.question_type || "MCQ"}
         </Badge>
       )}
       {data.questions.map((q, i) => {
         const qt = q.question_type || "mcq";
         return (
-          <div key={`q-${i}`} className="p-4 border border-border bg-background rounded-sm">
+          <div key={`q-${i}`} className="p-4 border border-border bg-background rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-lg bg-muted text-muted-foreground">
                 {Q_TYPE_LABELS[qt] || qt}
               </span>
             </div>
@@ -284,11 +284,11 @@ function PracticeDetail({ data }) {
                   return (
                     <div
                       key={opt.label}
-                      className={`flex items-center gap-2.5 p-2.5 rounded-sm text-xs border ${
+                      className={`flex items-center gap-2.5 p-2.5 rounded-lg text-xs border ${
                         isCorrect ? "border-green-500/40 bg-green-500/5" : "border-border"
                       }`}
                     >
-                      <span className={`w-5 h-5 rounded-sm flex items-center justify-center font-mono text-[10px] font-bold ${
+                      <span className={`w-5 h-5 rounded-lg flex items-center justify-center font-mono text-[10px] font-bold ${
                         isCorrect ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
                       }`}>
                         {opt.label}
@@ -317,7 +317,7 @@ function PracticeDetail({ data }) {
 
             {/* Model answer for subjective */}
             {(qt === "short_answer" || qt === "long_answer") && q.model_answer && (
-              <div className="mb-3 p-3 bg-muted/20 border border-border rounded-sm">
+              <div className="mb-3 p-3 bg-muted/20 border border-border rounded-lg">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Model Answer</div>
                 <p className="text-xs leading-relaxed">{q.model_answer}</p>
                 {q.key_points && q.key_points.length > 0 && (
@@ -335,7 +335,7 @@ function PracticeDetail({ data }) {
 
             {/* Explanation */}
             {q.explanation && (
-              <div className="text-xs text-muted-foreground p-2.5 bg-muted/30 rounded-sm">
+              <div className="text-xs text-muted-foreground p-2.5 bg-muted/30 rounded-lg">
                 <span className="font-bold">Explanation:</span> {q.explanation}
               </div>
             )}
@@ -358,7 +358,7 @@ function ExamPlanDetail({ data }) {
   return (
     <div className="space-y-3">
       {/* Summary bar */}
-      <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-sm border border-border">
+      <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg border border-border">
         <div className="text-center flex-1">
           <div className="font-mono text-base font-bold">{data.days_until_exam}</div>
           <div className="font-mono text-[10px] text-muted-foreground uppercase">Days Left</div>
@@ -384,7 +384,7 @@ function ExamPlanDetail({ data }) {
       {data.topics && data.topics.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {data.topics.map((t) => (
-            <span key={`ep-t-${t}`} className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-violet-500/10 text-violet-500 border border-violet-500/20 rounded-sm">
+            <span key={`ep-t-${t}`} className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-violet-500/10 text-violet-500 border border-violet-500/20 rounded-lg">
               {t}
             </span>
           ))}
@@ -396,14 +396,14 @@ function ExamPlanDetail({ data }) {
         const pCfg = examPriorityConfig[day.priority] || examPriorityConfig.medium;
         const PIcon = pCfg.icon;
         return (
-          <div key={`ep-day-${day.day}`} className="flex gap-3 p-3 border border-border bg-background rounded-sm">
-            <div className="w-9 h-9 rounded-sm bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
+          <div key={`ep-day-${day.day}`} className="flex gap-3 p-3 border border-border bg-background rounded-lg">
+            <div className="w-9 h-9 rounded-lg bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
               <span className="font-mono text-[10px] font-bold text-[hsl(var(--primary))]">D{String(day.day).padStart(2, "0")}</span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
-                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase ${pCfg.bg} ${pCfg.color}`}>
+                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-[9px] font-bold uppercase ${pCfg.bg} ${pCfg.color}`}>
                     <PIcon weight="bold" className="w-2.5 h-2.5" />
                     {pCfg.label}
                   </span>
@@ -414,7 +414,7 @@ function ExamPlanDetail({ data }) {
               {day.topics && day.topics.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1.5">
                   {day.topics.map((t) => (
-                    <span key={`edt-${day.day}-${t}`} className="text-[10px] font-medium px-2 py-0.5 bg-muted rounded-sm">{t}</span>
+                    <span key={`edt-${day.day}-${t}`} className="text-[10px] font-medium px-2 py-0.5 bg-muted rounded-lg">{t}</span>
                   ))}
                 </div>
               )}
@@ -468,13 +468,13 @@ function HistoryCard({ item, onDelete }) {
 
   return (
     <div
-      className="border border-border bg-card card-lift rounded-sm"
+      className="border border-border bg-card card-lift rounded-lg"
       data-testid={`history-card-${item.id}`}
     >
       {/* Card Header */}
       <div className="flex items-start gap-4 p-5">
         {/* Type icon */}
-        <div className={`w-10 h-10 rounded-sm flex items-center justify-center shrink-0 ${config.bg}`}>
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${config.bg}`}>
           {(() => { const Icon = config.icon; return <Icon weight="bold" className={`w-5 h-5 ${config.color}`} />; })()}
         </div>
 
@@ -505,7 +505,7 @@ function HistoryCard({ item, onDelete }) {
                   data-testid={`expand-${item.id}`}
                   variant="outline"
                   size="sm"
-                  className="h-8 rounded-sm gap-1.5 text-xs px-3"
+                  className="h-8 rounded-lg gap-1.5 text-xs px-3"
                   onClick={() => setExpanded((p) => !p)}
                 >
                   {expanded ? (
@@ -524,7 +524,7 @@ function HistoryCard({ item, onDelete }) {
                   data-testid={`delete-history-${item.id}`}
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-sm text-muted-foreground hover:text-destructive"
+                  className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive"
                   onClick={() => onDelete(item.type, item.id)}
                 >
                   <Trash className="w-4 h-4" />
@@ -626,14 +626,14 @@ export default function HistoryPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setFilter(key)}
-                  className={`rounded-sm h-8 gap-1.5 text-xs font-medium ${
+                  className={`rounded-lg h-8 gap-1.5 text-xs font-medium ${
                     isActive
                       ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
                   {label}
-                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-sm ${
+                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-lg ${
                     isActive ? "bg-[hsl(var(--primary)/0.15)]" : "bg-muted"
                   }`}>
                     {count}
@@ -649,9 +649,9 @@ export default function HistoryPage() {
               {isLoading && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={`skel-h-${i}`} className="border border-border bg-card p-5 mb-4 rounded-sm">
+                    <div key={`skel-h-${i}`} className="border border-border bg-card p-5 mb-4 rounded-lg">
                       <div className="flex gap-4">
-                        <div className="w-10 h-10 bg-muted rounded-sm loading-bar" style={{ animationDelay: `${i * 0.1}s` }} />
+                        <div className="w-10 h-10 bg-muted rounded-lg loading-bar" style={{ animationDelay: `${i * 0.1}s` }} />
                         <div className="flex-1 space-y-2.5">
                           <div className="h-3 bg-muted rounded w-24 loading-bar" style={{ animationDelay: `${i * 0.1 + 0.05}s` }} />
                           <div className="h-4 bg-muted rounded w-2/3 loading-bar" style={{ animationDelay: `${i * 0.1 + 0.1}s` }} />

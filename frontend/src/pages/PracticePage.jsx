@@ -118,7 +118,7 @@ function PracticeForm({ onGenerate, isLoading }) {
             placeholder="e.g. Physics, History"
             value={subject}
             onChange={(e) => { setSubject(e.target.value); clearError(); }}
-            className={`rounded-sm border-border h-11 bg-background ${
+            className={`rounded-lg border-border h-11 bg-background ${
               error && !subject.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}
             disabled={isLoading}
@@ -134,7 +134,7 @@ function PracticeForm({ onGenerate, isLoading }) {
             placeholder="e.g. Newton's Laws"
             value={chapter}
             onChange={(e) => { setChapter(e.target.value); clearError(); }}
-            className={`rounded-sm border-border h-11 bg-background ${
+            className={`rounded-lg border-border h-11 bg-background ${
               error && !chapter.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}
             disabled={isLoading}
@@ -146,10 +146,10 @@ function PracticeForm({ onGenerate, isLoading }) {
         <div className="space-y-2">
           <Label className="text-sm font-medium">Question Type</Label>
           <Select value={questionType} onValueChange={setQuestionType} disabled={isLoading}>
-            <SelectTrigger data-testid="practice-type-select" className="rounded-sm h-11 bg-background">
+            <SelectTrigger data-testid="practice-type-select" className="rounded-lg h-11 bg-background">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-sm">
+            <SelectContent className="rounded-lg">
               {QUESTION_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>
                   {t.label}
@@ -161,10 +161,10 @@ function PracticeForm({ onGenerate, isLoading }) {
         <div className="space-y-2">
           <Label className="text-sm font-medium">Questions</Label>
           <Select value={numQuestions} onValueChange={setNumQuestions} disabled={isLoading}>
-            <SelectTrigger data-testid="practice-num-select" className="rounded-sm h-11 bg-background">
+            <SelectTrigger data-testid="practice-num-select" className="rounded-lg h-11 bg-background">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-sm">
+            <SelectContent className="rounded-lg">
               {[3, 5, 7, 10].map((n) => (
                 <SelectItem key={n} value={String(n)}>
                   {n} questions
@@ -176,7 +176,7 @@ function PracticeForm({ onGenerate, isLoading }) {
       </div>
 
       {error && (
-        <div data-testid="practice-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-sm">
+        <div data-testid="practice-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-lg">
           <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
           {error}
         </div>
@@ -186,7 +186,7 @@ function PracticeForm({ onGenerate, isLoading }) {
         data-testid="generate-practice-btn"
         type="submit"
         disabled={isLoading}
-        className="rounded-sm h-11 px-8 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold tracking-wide transition-opacity"
+        className="rounded-lg h-11 px-8 gradient-btn tracking-wide"
       >
         {isLoading ? (
           <>
@@ -209,7 +209,7 @@ function QTypeBadge({ type }) {
   const Icon = TYPE_ICONS[type] || Exam;
   const label = TYPE_LABELS[type] || type;
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-muted text-muted-foreground">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-muted text-muted-foreground">
       <Icon weight="bold" className="w-3 h-3" />
       {label}
     </span>
@@ -243,11 +243,11 @@ function OptionButton({ opt, isSelected, isCorrect, isWrong, submitted, onSelect
       data-testid={`option-${opt.label}`}
       onClick={() => onSelect(opt.label)}
       disabled={submitted}
-      className={`flex items-start gap-3 p-4 border rounded-sm text-left transition-all ${border} ${bg} ${
+      className={`flex items-start gap-3 p-4 border rounded-lg text-left transition-all ${border} ${bg} ${
         !submitted ? "cursor-pointer" : "cursor-default"
       }`}
     >
-      <span className={`shrink-0 w-7 h-7 rounded-sm flex items-center justify-center font-mono text-xs font-bold ${labelStyle}`}>
+      <span className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center font-mono text-xs font-bold ${labelStyle}`}>
         {opt.label}
       </span>
       <span className="text-sm leading-relaxed flex-1">{opt.text}</span>
@@ -294,11 +294,11 @@ function TrueFalseQuestion({ q, answer, submitted, onSelect }) {
             data-testid={`tf-option-${opt.toLowerCase()}`}
             onClick={() => onSelect(opt)}
             disabled={submitted}
-            className={`flex items-center justify-center gap-3 p-5 border rounded-sm transition-all ${border} ${bg} ${
+            className={`flex items-center justify-center gap-3 p-5 border rounded-lg transition-all ${border} ${bg} ${
               !submitted ? "cursor-pointer" : "cursor-default"
             }`}
           >
-            <span className={`w-8 h-8 rounded-sm flex items-center justify-center font-mono text-sm font-bold ${labelStyle}`}>
+            <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono text-sm font-bold ${labelStyle}`}>
               {opt === "True" ? "T" : "F"}
             </span>
             <span className="text-sm font-bold">{opt}</span>
@@ -318,7 +318,7 @@ function NumericalQuestion({ q, answer, submitted, onAnswer }) {
 
   return (
     <div className="max-w-sm">
-      <div className={`border rounded-sm transition-all ${
+      <div className={`border rounded-lg transition-all ${
         submitted
           ? isCorrect ? "border-green-500 bg-green-500/5" : isWrong ? "border-red-500 bg-red-500/5" : "border-border"
           : answer ? "border-[hsl(var(--primary))]" : "border-border"
@@ -359,11 +359,11 @@ function ShortAnswerQuestion({ q, answer, submitted, onAnswer, showModel }) {
         onChange={(e) => onAnswer(e.target.value)}
         disabled={submitted}
         rows={3}
-        className="rounded-sm bg-background resize-none"
+        className="rounded-lg bg-background resize-none"
       />
       {submitted && answer && (
         <div className="flex items-center gap-2 text-xs">
-          <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest text-amber-500 border-amber-500/30 bg-amber-500/5">
+          <Badge variant="outline" className="rounded-lg text-[10px] font-bold uppercase tracking-widest text-amber-500 border-amber-500/30 bg-amber-500/5">
             Practice Attempted
           </Badge>
         </div>
@@ -386,11 +386,11 @@ function LongAnswerQuestion({ q, answer, submitted, onAnswer, showModel }) {
         onChange={(e) => onAnswer(e.target.value)}
         disabled={submitted}
         rows={6}
-        className="rounded-sm bg-background resize-none"
+        className="rounded-lg bg-background resize-none"
       />
       {submitted && answer && (
         <div className="flex items-center gap-2 text-xs">
-          <Badge variant="outline" className="rounded-sm text-[10px] font-bold uppercase tracking-widest text-amber-500 border-amber-500/30 bg-amber-500/5">
+          <Badge variant="outline" className="rounded-lg text-[10px] font-bold uppercase tracking-widest text-amber-500 border-amber-500/30 bg-amber-500/5">
             Practice Attempted
           </Badge>
         </div>
@@ -405,7 +405,7 @@ function LongAnswerQuestion({ q, answer, submitted, onAnswer, showModel }) {
 /* ============== MODEL ANSWER PANEL ============== */
 function ModelAnswerPanel({ q }) {
   return (
-    <div className="border border-border bg-muted/20 rounded-sm p-4 space-y-3" data-testid="model-answer-panel">
+    <div className="border border-border bg-muted/20 rounded-lg p-4 space-y-3" data-testid="model-answer-panel">
       <div className="overline text-muted-foreground flex items-center gap-1.5">
         <Eye weight="bold" className="w-3 h-3" /> Model Answer
       </div>
@@ -418,7 +418,7 @@ function ModelAnswerPanel({ q }) {
           <ul className="space-y-1.5">
             {q.key_points.map((kp, i) => (
               <li key={`kp-${i}`} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-[hsl(var(--primary)/0.08)] font-mono text-[9px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-lg bg-[hsl(var(--primary)/0.08)] font-mono text-[9px] font-bold text-[hsl(var(--primary))] mt-0.5 shrink-0">
                   {i + 1}
                 </span>
                 {kp}
@@ -441,7 +441,7 @@ function QuizNavigation({ currentQ, totalQ, answers, submitted, onPrev, onNext, 
         data-testid="prev-question-btn"
         variant="outline"
         size="sm"
-        className="rounded-sm"
+        className="rounded-lg"
         disabled={currentQ === 0}
         onClick={onPrev}
       >
@@ -470,18 +470,18 @@ function QuizNavigation({ currentQ, totalQ, answers, submitted, onPrev, onNext, 
       </div>
 
       {submitted ? (
-        <Button data-testid="retake-quiz-btn" variant="outline" size="sm" className="rounded-sm" onClick={onReset}>
+        <Button data-testid="retake-quiz-btn" variant="outline" size="sm" className="rounded-lg" onClick={onReset}>
           Retake Test
         </Button>
       ) : currentQ < totalQ - 1 ? (
-        <Button data-testid="next-question-btn" variant="outline" size="sm" className="rounded-sm gap-1" onClick={onNext}>
+        <Button data-testid="next-question-btn" variant="outline" size="sm" className="rounded-lg gap-1" onClick={onNext}>
           Next <ArrowRight className="w-3.5 h-3.5" />
         </Button>
       ) : (
         <Button
           data-testid="submit-quiz-btn"
           size="sm"
-          className="rounded-sm bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold"
+          className="rounded-lg gradient-btn"
           onClick={onSubmit}
           disabled={answeredCount < totalQ}
         >
@@ -563,13 +563,13 @@ function QuizView({ test }) {
         </div>
         <div className="flex items-center gap-3">
           {submitted && gradableQs.length > 0 && (
-            <Badge data-testid="quiz-score" variant="outline" className="rounded-sm px-3 py-1.5 text-sm font-bold gap-1.5">
+            <Badge data-testid="quiz-score" variant="outline" className="rounded-lg px-3 py-1.5 text-sm font-bold gap-1.5">
               <Trophy weight="bold" className="w-4 h-4 text-[hsl(var(--primary))]" />
               {score}/{gradableQs.length}
             </Badge>
           )}
           {submitted && subjectiveQs.length > 0 && (
-            <Badge data-testid="quiz-attempted" variant="outline" className="rounded-sm px-3 py-1.5 text-sm font-bold gap-1.5 text-amber-500 border-amber-500/30">
+            <Badge data-testid="quiz-attempted" variant="outline" className="rounded-lg px-3 py-1.5 text-sm font-bold gap-1.5 text-amber-500 border-amber-500/30">
               <PencilSimpleLine weight="bold" className="w-4 h-4" />
               {attempted} practiced
             </Badge>
@@ -607,7 +607,7 @@ function QuizView({ test }) {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-4 border border-border bg-muted/30 rounded-sm"
+              className="mt-4 p-4 border border-border bg-muted/30 rounded-lg"
               data-testid={`explanation-${currentQ}`}
             >
               <div className="overline text-muted-foreground mb-1">Explanation</div>
@@ -622,7 +622,7 @@ function QuizView({ test }) {
                 data-testid={`toggle-model-${currentQ}`}
                 variant="outline"
                 size="sm"
-                className="rounded-sm gap-1.5 text-xs"
+                className="rounded-lg gap-1.5 text-xs"
                 onClick={() => toggleModel(currentQ)}
               >
                 <Eye weight="bold" className="w-3.5 h-3.5" />
@@ -681,7 +681,7 @@ function PracticeHistory({ tests, onSelect, onDelete, activeId }) {
             return (
               <div
                 key={test.id}
-                className={`group p-3 mb-1 cursor-pointer transition-colors rounded-sm ${
+                className={`group p-3 mb-1 cursor-pointer transition-colors rounded-lg ${
                   activeId === test.id
                     ? "bg-[hsl(var(--primary)/0.08)] border border-[hsl(var(--primary)/0.2)]"
                     : "hover:bg-muted border border-transparent"
@@ -696,7 +696,7 @@ function PracticeHistory({ tests, onSelect, onDelete, activeId }) {
                     </span>
                     <p className="text-sm font-medium truncate">{test.chapter}</p>
                     <div className="flex items-center gap-1.5 mt-1">
-                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))]">
+                      <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-lg bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))]">
                         {typeLabel}
                       </span>
                       <span className="font-mono text-[10px] text-muted-foreground">
@@ -708,7 +708,7 @@ function PracticeHistory({ tests, onSelect, onDelete, activeId }) {
                     data-testid={`delete-test-${test.id}`}
                     variant="ghost"
                     size="icon"
-                    className="opacity-0 group-hover:opacity-100 h-7 w-7 rounded-sm shrink-0 text-muted-foreground hover:text-destructive"
+                    className="opacity-0 group-hover:opacity-100 h-7 w-7 rounded-lg shrink-0 text-muted-foreground hover:text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDelete(test.id);

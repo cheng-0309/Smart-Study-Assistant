@@ -103,7 +103,7 @@ export default function ExamPlanForm({ onGenerate, isLoading }) {
             placeholder="e.g. Mathematics, Physics"
             value={subject}
             onChange={(e) => { setSubject(e.target.value); if (error) setError(""); }}
-            className="rounded-sm border-border h-11 bg-background"
+            className="rounded-lg border-border h-11 bg-background"
             disabled={isLoading}
           />
         </div>
@@ -114,10 +114,10 @@ export default function ExamPlanForm({ onGenerate, isLoading }) {
             Study Hours / Day <span className="text-[hsl(var(--primary))]">*</span>
           </Label>
           <Select value={hoursPerDay} onValueChange={setHoursPerDay} disabled={isLoading}>
-            <SelectTrigger data-testid="exam-hours-select" className="rounded-sm h-11 bg-background">
+            <SelectTrigger data-testid="exam-hours-select" className="rounded-lg h-11 bg-background">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-sm">
+            <SelectContent className="rounded-lg">
               {[1, 1.5, 2, 2.5, 3, 4, 5, 6, 8].map((h) => (
                 <SelectItem key={h} value={String(h)}>
                   {h} {h === 1 ? "hour" : "hours"}
@@ -139,7 +139,7 @@ export default function ExamPlanForm({ onGenerate, isLoading }) {
               <Button
                 data-testid="exam-date-picker"
                 variant="outline"
-                className={`rounded-sm h-11 w-full justify-start text-left font-normal bg-background ${
+                className={`rounded-lg h-11 w-full justify-start text-left font-normal bg-background ${
                   !examDate ? "text-muted-foreground" : ""
                 }`}
                 disabled={isLoading}
@@ -182,14 +182,14 @@ export default function ExamPlanForm({ onGenerate, isLoading }) {
               value={topicInput}
               onChange={(e) => setTopicInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="rounded-sm border-border h-11 bg-background flex-1"
+              className="rounded-lg border-border h-11 bg-background flex-1"
               disabled={isLoading}
             />
             <Button
               data-testid="add-topic-btn"
               type="button"
               variant="outline"
-              className="rounded-sm h-11 px-3"
+              className="rounded-lg h-11 px-3"
               onClick={addTopic}
               disabled={isLoading || !topicInput.trim()}
             >
@@ -205,7 +205,7 @@ export default function ExamPlanForm({ onGenerate, isLoading }) {
           {topics.map((t, i) => (
             <span
               key={`topic-${t}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.2)] rounded-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.2)] rounded-lg"
             >
               {t}
               <button
@@ -224,7 +224,7 @@ export default function ExamPlanForm({ onGenerate, isLoading }) {
 
       {/* Error */}
       {error && (
-        <div data-testid="exam-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-sm">
+        <div data-testid="exam-form-error" className="flex items-center gap-2 text-destructive text-sm mb-4 p-2.5 bg-destructive/5 border border-destructive/20 rounded-lg">
           <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
           {error}
         </div>
@@ -234,7 +234,7 @@ export default function ExamPlanForm({ onGenerate, isLoading }) {
         data-testid="generate-exam-plan-btn"
         type="submit"
         disabled={isLoading}
-        className="rounded-sm h-11 px-8 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 font-bold tracking-wide transition-opacity"
+        className="rounded-lg h-11 px-8 gradient-btn tracking-wide"
       >
         {isLoading ? (
           <>

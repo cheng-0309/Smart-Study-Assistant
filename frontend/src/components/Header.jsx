@@ -1,7 +1,8 @@
-import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock, House } from "@phosphor-icons/react";
+import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock } from "@phosphor-icons/react";
 import { useTheme } from "../context/ThemeContext";
 import { Button } from "../components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Tooltip,
   TooltipContent,
@@ -10,7 +11,6 @@ import {
 } from "../components/ui/tooltip";
 
 const NAV_ITEMS = [
-  { path: "/", label: "Home", icon: House },
   { path: "/notes", label: "Notes", icon: NotePencil },
   { path: "/planner", label: "Planner", icon: CalendarDots },
   { path: "/practice", label: "Practice", icon: Exam },
@@ -37,28 +37,40 @@ function NavBar() {
   const location = useLocation();
 
   return (
-    <nav className="flex items-center gap-1" data-testid="main-nav">
-      {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+    <motion.nav
+      className="flex items-center gap-1"
+      data-testid="main-nav"
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+    >
+      {NAV_ITEMS.map(({ path, label, icon: Icon }, i) => {
         const isActive = location.pathname === path;
         return (
-          <Button
+          <motion.div
             key={path}
-            data-testid={`nav-${label.toLowerCase()}`}
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(path)}
-            className={`rounded-lg h-9 gap-1.5 text-sm font-medium transition-all ${
-              isActive
-                ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] nav-active-indicator"
-                : "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--primary)/0.05)]"
-            }`}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: i * 0.05, ease: "easeOut" }}
           >
-            <Icon weight={isActive ? "bold" : "regular"} className="w-4 h-4" />
-            <span className="hidden sm:inline">{label}</span>
-          </Button>
+            <Button
+              data-testid={`nav-${label.toLowerCase()}`}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(path)}
+              className={`rounded-lg h-9 gap-1.5 text-sm font-medium transition-all ${
+                isActive
+                  ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] nav-active-indicator"
+                  : "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--primary)/0.05)]"
+              }`}
+            >
+              <Icon weight={isActive ? "bold" : "regular"} className="w-4 h-4" />
+              <span className="hidden sm:inline">{label}</span>
+            </Button>
+          </motion.div>
         );
       })}
-    </nav>
+    </motion.nav>
   );
 }
 
@@ -102,6 +114,9 @@ function HeaderActions({ onToggleSidebar, sidebarOpen }) {
 }
 
 export default function Header({ onToggleSidebar, sidebarOpen }) {
+  const location = useLocation();
+  const isLanding = location.pathname === "/";
+
   return (
     <header
       data-testid="app-header"
@@ -109,7 +124,9 @@ export default function Header({ onToggleSidebar, sidebarOpen }) {
     >
       <div className="max-w-[1440px] mx-auto flex items-center justify-between px-6 h-14">
         <Logo />
-        <NavBar />
+        <AnimatePresence>
+          {!isLanding && <NavBar />}
+        </AnimatePresence>
         <HeaderActions onToggleSidebar={onToggleSidebar} sidebarOpen={sidebarOpen} />
       </div>
     </header>

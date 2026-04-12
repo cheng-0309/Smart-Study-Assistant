@@ -17,6 +17,7 @@ Build a study assistant that generates structured study notes based on Subject a
 ## What's Been Implemented (Feb-Apr 2026)
 
 ### Core Features
+- **Home Screen Landing Page** — Hero section, Feature Cards (Notes/Planner/Quiz/History), "How It Works" 3-step guide, Final CTA, Footer. Fully styled with Premium Neon design system.
 - **Enhanced Notes Generator** — Subject, Topic, Note Type (Quick Revision/Detailed/Exam-Focused). Output: Title, Introduction, Main Content (sectioned headings+bullets), Examples, Key Points (5-10 mandatory), Summary
 - **Personalized Study Planner** — Topic, hours/day, duration → AI-generated day-by-day plan
 - **Exam Preparation Planner** — Subject, Topics (multi), Exam Date (Calendar picker), Hours/Day → AI-generated day-wise schedule with priorities (high/medium/low)
@@ -24,6 +25,13 @@ Build a study assistant that generates structured study notes based on Subject a
 - **Unified History** — Aggregated timeline with filter tabs (All/Notes/Plans/Exam Prep/Quizzes), expandable details, delete
 - **Export** — PDF and Text for notes
 - **Neon-inspired UI** — CSS variable-based theming with cyan/purple neon accents (dark: vivid glows; light: muted tones), glass header, hover glow transitions
+
+### Routing
+- `/` — Home/Landing Page
+- `/notes` — Notes Generator (extracted from old HomePage)
+- `/planner` — Study Planner
+- `/practice` — Practice Tests
+- `/history` — Unified History
 
 ### Technical Quality
 - Backward-compatible note rendering (old notes with key_concepts still display)
@@ -64,6 +72,7 @@ Build a study assistant that generates structured study notes based on Subject a
 - [x] Practice Tests (MCQs)
 - [x] Unified History
 - [x] Exam Preparation Planner
+- [x] Home Screen Landing Page (Hero, Features, How It Works, CTA) — Feb 2026
 
 ### P1 (Important)
 - [ ] Study Analytics Dashboard (study time, notes generated, quiz accuracy)

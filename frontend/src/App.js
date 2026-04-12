@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import { Toaster } from "./components/ui/sonner";
 import HomePage from "./pages/HomePage";
+import NotesPage from "./pages/NotesPage";
 import PlannerPage from "./pages/PlannerPage";
 import PracticePage from "./pages/PracticePage";
 import HistoryPage from "./pages/HistoryPage";
@@ -25,6 +26,7 @@ function App() {
         <div className="relative z-10">
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/notes" element={<NotesPage />} />
             <Route path="/planner" element={<PlannerPage />} />
             <Route path="/practice" element={<PracticePage />} />
             <Route path="/history" element={<HistoryPage />} />

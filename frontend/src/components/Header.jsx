@@ -1,4 +1,4 @@
-import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock } from "@phosphor-icons/react";
+import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock, House } from "@phosphor-icons/react";
 import { useTheme } from "../context/ThemeContext";
 import { Button } from "../components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -10,15 +10,18 @@ import {
 } from "../components/ui/tooltip";
 
 const NAV_ITEMS = [
-  { path: "/", label: "Notes", icon: NotePencil },
+  { path: "/", label: "Home", icon: House },
+  { path: "/notes", label: "Notes", icon: NotePencil },
   { path: "/planner", label: "Planner", icon: CalendarDots },
   { path: "/practice", label: "Practice", icon: Exam },
   { path: "/history", label: "History", icon: Clock },
 ];
 
 function Logo() {
+  const navigate = useNavigate();
+
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")} data-testid="logo-home-link">
       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--gradient-primary)" }}>
         <BookOpenText weight="bold" className="w-4.5 h-4.5 text-white" />
       </div>

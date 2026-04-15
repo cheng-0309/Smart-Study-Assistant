@@ -93,7 +93,11 @@ class MCQOption(BaseModel):
     text: str
 
 class BaseQuestion(BaseModel):
+    id: str = ""
     question_type: str = "mcq"
+    topic: str = ""
+    difficulty: str = "medium"
+    marks: int = 1
     question: str
     explanation: str = ""
     options: List[MCQOption] = []
@@ -323,7 +327,11 @@ PRACTICE_SYSTEM_PROMPT = """You are a test generator for students. Generate ques
 {
   "questions": [
     {
+      "id": "q1",
       "question_type": "mcq",
+      "topic": "Specific sub-topic being tested",
+      "difficulty": "easy",
+      "marks": 1,
       "question": "What is ...?",
       "options": [
         {"label": "A", "text": "Option text"},
@@ -332,24 +340,39 @@ PRACTICE_SYSTEM_PROMPT = """You are a test generator for students. Generate ques
         {"label": "D", "text": "Option text"}
       ],
       "correct_answer": "A",
-      "explanation": "Brief explanation"
+      "explanation": "Brief explanation",
+      "key_points": ["Important concept 1", "Important concept 2"]
     },
     {
+      "id": "q2",
       "question_type": "true_false",
+      "topic": "Specific sub-topic being tested",
+      "difficulty": "medium",
+      "marks": 1,
       "question": "Statement to evaluate as true or false",
       "options": [],
       "correct_answer": "True",
-      "explanation": "Brief explanation"
+      "explanation": "Brief explanation",
+      "key_points": ["Key concept 1", "Key concept 2"]
     },
     {
+      "id": "q3",
       "question_type": "numerical",
+      "topic": "Specific sub-topic being tested",
+      "difficulty": "hard",
+      "marks": 1,
       "question": "Calculate the value of ...",
       "options": [],
       "correct_answer": "42",
-      "explanation": "Step-by-step solution"
+      "explanation": "Step-by-step solution",
+      "key_points": ["Formula used", "Key step"]
     },
     {
+      "id": "q4",
       "question_type": "short_answer",
+      "topic": "Specific sub-topic being tested",
+      "difficulty": "medium",
+      "marks": 2,
       "question": "Briefly explain ...",
       "options": [],
       "correct_answer": "",
@@ -357,7 +380,11 @@ PRACTICE_SYSTEM_PROMPT = """You are a test generator for students. Generate ques
       "key_points": ["Key point 1", "Key point 2", "Key point 3"]
     },
     {
+      "id": "q5",
       "question_type": "long_answer",
+      "topic": "Specific sub-topic being tested",
+      "difficulty": "hard",
+      "marks": 4,
       "question": "Discuss in detail ...",
       "options": [],
       "correct_answer": "",
@@ -368,6 +395,11 @@ PRACTICE_SYSTEM_PROMPT = """You are a test generator for students. Generate ques
 }
 
 Rules:
+- Each question MUST have a unique "id" (q1, q2, q3...)
+- Each question MUST have a "topic" field with the specific sub-topic being tested
+- Each question MUST have a "difficulty" field: "easy", "medium", or "hard" (vary across questions)
+- Each question MUST have a "marks" field: 1 for mcq/true_false/numerical, 2 for short_answer, 4 for long_answer
+- Each question MUST have a non-empty "key_points" array with at least 2 items
 - question_type must be one of: mcq, true_false, numerical, short_answer, long_answer
 - MCQ: exactly 4 options (A,B,C,D), correct_answer is A/B/C/D
 - True/False: correct_answer is "True" or "False", options array empty
@@ -435,7 +467,21 @@ async def generate_practice_with_ai(subject: str, chapter: str, num_questions: i
             cleaned = cleaned.split("\n", 1)[1]
             cleaned = cleaned.rsplit("```", 1)[0]
         parsed = json.loads(cleaned)
-        return [BaseQuestion(**q) for q in parsed["questions"]]
+        questions = []
+        for i, q in enumerate(parsed["questions"]):
+            if not q.get("id"):
+                q["id"] = f"q{i + 1}"
+            if not q.get("topic"):
+                q["topic"] = chapter
+            if q.get("difficulty") not in ("easy", "medium", "hard"):
+                q["difficulty"] = "medium"
+            if not isinstance(q.get("marks"), int) or q["marks"] < 1:
+                marks_map = {"short_answer": 2, "long_answer": 4}
+                q["marks"] = marks_map.get(q.get("question_type", ""), 1)
+            if not q.get("key_points"):
+                q["key_points"] = [f"Key concept from: {q.get('question', '')[:60]}"]
+            questions.append(BaseQuestion(**q))
+        return questions
     except (json.JSONDecodeError, KeyError, Exception) as e:
         logger.error(f"Failed to parse practice response: {e}")
         raise HTTPException(status_code=500, detail="Failed to parse AI response")

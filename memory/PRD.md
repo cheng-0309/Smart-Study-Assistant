@@ -76,8 +76,8 @@ Build a study assistant that generates structured study notes based on Subject a
 - [x] Navigation Refinement: Minimal header on landing, full nav on feature pages, logo-based home navigation — Feb 2026
 
 ### P1 (Important)
-- [ ] Study Analytics Dashboard (study time, notes generated, quiz accuracy)
-- [ ] Search/filter saved notes
+- [x] Study Analytics Dashboard (totals, subject breakdown, note types, activity timeline) — Feb 2026
+- [x] Search/filter saved notes (sidebar search by subject/topic/type) — Feb 2026
 - [ ] Edit existing notes
 
 ### P2 (Nice to Have)

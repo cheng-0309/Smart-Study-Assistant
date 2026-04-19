@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Header from "../components/Header";
 import { motion } from "framer-motion";
-import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning } from "@phosphor-icons/react";
+import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning, Trophy, Target } from "@phosphor-icons/react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -126,6 +126,115 @@ function NoteTypeBreakdown({ data }) {
   );
 }
 
+function AccuracyGauge({ pct, attempts }) {
+  const radius = 50;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (pct / 100) * circumference;
+  const color = pct >= 70 ? "hsl(var(--primary))" : pct >= 40 ? "hsl(45, 90%, 50%)" : "hsl(0, 70%, 55%)";
+
+  return (
+    <motion.div variants={fadeUp} className="glass-card p-5 flex flex-col items-center" data-testid="accuracy-gauge">
+      <h3 className="text-sm font-bold mb-4 self-start" style={{ fontFamily: "var(--font-heading)" }}>Overall Accuracy</h3>
+      {attempts === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-6">No quiz scores yet. Complete a quiz to see your accuracy.</p>
+      ) : (
+        <>
+          <div className="relative w-32 h-32">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
+              <motion.circle
+                cx="60" cy="60" r={radius} fill="none" stroke={color} strokeWidth="8"
+                strokeLinecap="round" strokeDasharray={circumference}
+                initial={{ strokeDashoffset: circumference }}
+                animate={{ strokeDashoffset: offset }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-black" style={{ fontFamily: "var(--font-heading)" }}>{pct}%</span>
+              <span className="text-[9px] text-muted-foreground font-mono">{attempts} quiz{attempts !== 1 ? "zes" : ""}</span>
+            </div>
+          </div>
+        </>
+      )}
+    </motion.div>
+  );
+}
+
+function SubjectAccuracy({ data }) {
+  if (!data || data.length === 0) return null;
+
+  return (
+    <motion.div variants={fadeUp} className="glass-card p-5" data-testid="subject-accuracy">
+      <h3 className="text-sm font-bold mb-4" style={{ fontFamily: "var(--font-heading)" }}>Accuracy by Subject</h3>
+      <div className="space-y-3">
+        {data.slice(0, 8).map((item) => {
+          const color = item.avg_score >= 70 ? "hsl(var(--primary))" : item.avg_score >= 40 ? "hsl(45, 90%, 50%)" : "hsl(0, 70%, 55%)";
+          return (
+            <div key={item.subject} className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground font-medium w-20 truncate shrink-0">{item.subject}</span>
+              <div className="flex-1 h-6 rounded-md bg-[hsl(var(--muted))] overflow-hidden">
+                <motion.div
+                  className="h-full rounded-md"
+                  style={{ background: color, opacity: 0.6 }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${item.avg_score}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                />
+              </div>
+              <span className="text-xs font-bold w-12 text-right font-mono">{item.avg_score}%</span>
+              <span className="text-[9px] text-muted-foreground font-mono w-16 text-right">{item.correct}/{item.total}</span>
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+function ScoreTrend({ data }) {
+  if (!data || data.length === 0) {
+    return (
+      <motion.div variants={fadeUp} className="glass-card p-5" data-testid="score-trend">
+        <h3 className="text-sm font-bold mb-4" style={{ fontFamily: "var(--font-heading)" }}>Score Trend</h3>
+        <p className="text-sm text-muted-foreground text-center py-6">Complete quizzes to see your score trend over time.</p>
+      </motion.div>
+    );
+  }
+
+  const maxVal = 100;
+
+  return (
+    <motion.div variants={fadeUp} className="glass-card p-5" data-testid="score-trend">
+      <h3 className="text-sm font-bold mb-4" style={{ fontFamily: "var(--font-heading)" }}>Score Trend</h3>
+      <div className="flex items-end gap-1 h-28">
+        {data.map((d) => {
+          const pct = d.avg_score;
+          const color = pct >= 70 ? "hsl(var(--primary) / 0.6)" : pct >= 40 ? "hsl(45, 90%, 50%, 0.6)" : "hsl(0, 70%, 55%, 0.6)";
+          return (
+            <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+              <motion.div
+                className="w-full rounded-t-sm min-h-[2px]"
+                style={{ background: color }}
+                initial={{ height: 0 }}
+                animate={{ height: `${Math.max(pct, 3)}%` }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              />
+              <div className="absolute -top-8 bg-card border border-border px-2 py-1 rounded text-[9px] font-mono opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-sm">
+                {d.date.slice(5)}: {d.avg_score}%
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-between mt-2">
+        <span className="text-[9px] text-muted-foreground font-mono">{data[0]?.date.slice(5)}</span>
+        <span className="text-[9px] text-muted-foreground font-mono">{data[data.length - 1]?.date.slice(5)}</span>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function AnalyticsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -187,7 +296,26 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Activity timeline */}
-                <ActivityTimeline data={data?.activity_timeline} />
+                <div className="mb-6">
+                  <ActivityTimeline data={data?.activity_timeline} />
+                </div>
+
+                {/* Quiz Score Tracking Section */}
+                <motion.div variants={fadeUp} className="mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Trophy weight="duotone" className="w-4 h-4 text-[hsl(var(--primary))]" />
+                    <h2 className="text-lg font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+                      Quiz <span className="gradient-text">Performance</span>
+                    </h2>
+                  </div>
+                </motion.div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <AccuracyGauge pct={data?.quiz_scores?.avg_accuracy || 0} attempts={data?.quiz_scores?.total_attempts || 0} />
+                  <SubjectAccuracy data={data?.quiz_scores?.subject_accuracy} />
+                </div>
+
+                <ScoreTrend data={data?.quiz_scores?.score_trend} />
               </>
             )}
           </motion.div>

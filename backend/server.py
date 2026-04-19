@@ -124,6 +124,27 @@ class PracticeTest(BaseModel):
     questions: List[BaseQuestion] = []
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+class QuizScoreRecord(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    test_id: str
+    subject: str
+    chapter: str
+    total_gradable: int
+    correct: int
+    total_subjective: int
+    attempted_subjective: int
+    score_pct: float = 0
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class QuizScoreRequest(BaseModel):
+    test_id: str
+    subject: str
+    chapter: str
+    total_gradable: int
+    correct: int
+    total_subjective: int = 0
+    attempted_subjective: int = 0
+
 class PracticeRequest(BaseModel):
     subject: str
     chapter: str
@@ -806,6 +827,31 @@ async def delete_practice(test_id: str):
         raise HTTPException(status_code=404, detail="Test not found")
     return {"message": "Test deleted"}
 
+# --- Quiz Score Routes ---
+
+@api_router.post("/quiz-scores")
+async def save_quiz_score(req: QuizScoreRequest):
+    pct = round((req.correct / req.total_gradable) * 100, 1) if req.total_gradable > 0 else 0
+    record = QuizScoreRecord(
+        test_id=req.test_id,
+        subject=req.subject,
+        chapter=req.chapter,
+        total_gradable=req.total_gradable,
+        correct=req.correct,
+        total_subjective=req.total_subjective,
+        attempted_subjective=req.attempted_subjective,
+        score_pct=pct,
+    )
+    doc = record.model_dump()
+    await db.quiz_scores.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.get("/quiz-scores")
+async def get_quiz_scores():
+    scores = await db.quiz_scores.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return scores
+
 # --- History Routes ---
 
 @api_router.get("/history")
@@ -953,6 +999,43 @@ async def get_analytics():
 
     activity_list = sorted(activity.values(), key=lambda x: x["date"])
 
+    # Quiz score analytics
+    scores_cursor = db.quiz_scores.find({}, {"_id": 0})
+    scores_list = await scores_cursor.to_list(500)
+
+    avg_accuracy = 0
+    subject_scores = {}
+    score_trend = []
+
+    if scores_list:
+        total_pct = sum(s.get("score_pct", 0) for s in scores_list)
+        avg_accuracy = round(total_pct / len(scores_list), 1)
+
+        # Per-subject accuracy
+        for s in scores_list:
+            subj = s.get("subject", "Unknown")
+            if subj not in subject_scores:
+                subject_scores[subj] = {"total_pct": 0, "count": 0, "total_correct": 0, "total_gradable": 0}
+            subject_scores[subj]["total_pct"] += s.get("score_pct", 0)
+            subject_scores[subj]["count"] += 1
+            subject_scores[subj]["total_correct"] += s.get("correct", 0)
+            subject_scores[subj]["total_gradable"] += s.get("total_gradable", 0)
+
+        # Score trend (by date)
+        trend_map = {}
+        for s in scores_list:
+            day = s["created_at"][:10]
+            if day not in trend_map:
+                trend_map[day] = {"date": day, "total_pct": 0, "count": 0}
+            trend_map[day]["total_pct"] += s.get("score_pct", 0)
+            trend_map[day]["count"] += 1
+        score_trend = [{"date": v["date"], "avg_score": round(v["total_pct"] / v["count"], 1)} for v in sorted(trend_map.values(), key=lambda x: x["date"])]
+
+    subject_accuracy = [
+        {"subject": k, "avg_score": round(v["total_pct"] / v["count"], 1), "quizzes": v["count"], "correct": v["total_correct"], "total": v["total_gradable"]}
+        for k, v in sorted(subject_scores.items(), key=lambda x: -(x[1]["total_pct"] / x[1]["count"]))
+    ]
+
     return {
         "totals": {
             "notes": notes_count,
@@ -965,6 +1048,12 @@ async def get_analytics():
         "note_type_breakdown": [{"type": k, "count": v} for k, v in note_type_counts.items()],
         "quiz_type_breakdown": [{"type": k, "count": v} for k, v in quiz_type_counts.items()],
         "activity_timeline": activity_list,
+        "quiz_scores": {
+            "avg_accuracy": avg_accuracy,
+            "total_attempts": len(scores_list),
+            "subject_accuracy": subject_accuracy,
+            "score_trend": score_trend,
+        },
     }
 
 # Include router and middleware

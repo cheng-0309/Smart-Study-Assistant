@@ -646,7 +646,28 @@ function QuizView({ test }) {
         questions={questions}
         onPrev={() => setCurrentQ((p) => p - 1)}
         onNext={() => setCurrentQ((p) => p + 1)}
-        onSubmit={() => { setSubmitted(true); setCurrentQ(0); }}
+        onSubmit={() => { setSubmitted(true); setCurrentQ(0); 
+          // Save quiz score
+          const gradable = questions.filter((qu) => isAutoGradable(qu.question_type || "mcq"));
+          const subjective = questions.filter((qu) => !isAutoGradable(qu.question_type || "mcq"));
+          const correct = gradable.filter((qu) => {
+            const idx = questions.indexOf(qu);
+            return String(answers[idx]).trim() === String(qu.correct_answer).trim();
+          }).length;
+          const attemptedSubj = subjective.filter((qu) => {
+            const idx = questions.indexOf(qu);
+            return answers[idx] !== undefined && answers[idx] !== "";
+          }).length;
+          axios.post(`${API}/quiz-scores`, {
+            test_id: test.id,
+            subject: test.subject,
+            chapter: test.chapter,
+            total_gradable: gradable.length,
+            correct,
+            total_subjective: subjective.length,
+            attempted_subjective: attemptedSubj,
+          }).catch(() => {});
+        }}
         onReset={() => { setAnswers({}); setSubmitted(false); setShowModels({}); setCurrentQ(0); }}
         onDotClick={setCurrentQ}
       />

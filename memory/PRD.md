@@ -78,10 +78,11 @@ Build a study assistant that generates structured study notes based on Subject a
 ### P1 (Important)
 - [x] Study Analytics Dashboard (totals, subject breakdown, note types, activity timeline) — Feb 2026
 - [x] Search/filter saved notes (sidebar search by subject/topic/type) — Feb 2026
-- [ ] Edit existing notes
+- [x] Edit existing notes (inline editing of subject/chapter via click-to-edit) — Feb 2026
 
 ### P2 (Nice to Have)
-- [ ] Print-optimized layout
-- [ ] Share notes via link
-- [ ] Flashcard generation from notes
-- [ ] Folder/tag organization
+- [x] Print-optimized layout (opens clean print window with formatted HTML) — Feb 2026
+- [x] Share notes via link (generates shareable URL, /shared/:shareId public page) — Feb 2026
+- [x] Flashcard generation from notes (auto-generates from key_points & content sections, flip animation viewer) — Feb 2026
+- [x] Folder/tag organization (add/remove tags on notes, GET /api/tags for all tags) — Feb 2026
+- [ ] Quiz score tracking in Analytics (accuracy, best/worst subjects, trends)

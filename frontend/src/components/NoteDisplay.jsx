@@ -188,8 +188,19 @@ function NoteTitle({ subject, chapter, note, onNoteUpdate }) {
     try {
       const res = await axios.post(`${API}/notes/${note.id}/share`);
       const url = `${window.location.origin}/shared/${res.data.share_id}`;
-      await navigator.clipboard.writeText(url);
-      toast.success("Share link copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Share link copied to clipboard!");
+      } catch {
+        // Fallback for restricted contexts
+        const input = document.createElement("input");
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+        toast.success("Share link copied!");
+      }
     } catch {
       toast.error("Failed to generate share link");
     }

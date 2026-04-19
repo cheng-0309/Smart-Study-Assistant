@@ -55,7 +55,16 @@ class StudyNote(BaseModel):
     chapter: str
     note_type: str = "detailed"
     content: NoteContent
+    tags: List[str] = []
+    share_id: str = ""
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class NoteUpdateRequest(BaseModel):
+    subject: Optional[str] = None
+    chapter: Optional[str] = None
+    note_type: Optional[str] = None
+    content: Optional[NoteContent] = None
+    tags: Optional[List[str]] = None
 
 class GenerateRequest(BaseModel):
     subject: str
@@ -602,6 +611,92 @@ async def delete_note(note_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Note not found")
     return {"message": "Note deleted"}
+
+@api_router.put("/notes/{note_id}", response_model=StudyNote)
+async def update_note(note_id: str, req: NoteUpdateRequest):
+    update_fields = {}
+    if req.subject is not None:
+        update_fields["subject"] = req.subject
+    if req.chapter is not None:
+        update_fields["chapter"] = req.chapter
+    if req.note_type is not None:
+        update_fields["note_type"] = req.note_type
+    if req.content is not None:
+        update_fields["content"] = req.content.model_dump()
+    if req.tags is not None:
+        update_fields["tags"] = req.tags
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    result = await db.study_notes.update_one({"id": note_id}, {"$set": update_fields})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Note not found")
+    updated = await db.study_notes.find_one({"id": note_id}, {"_id": 0})
+    return updated
+
+@api_router.post("/notes/{note_id}/share")
+async def share_note(note_id: str):
+    note = await db.study_notes.find_one({"id": note_id}, {"_id": 0})
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    share_id = note.get("share_id")
+    if not share_id:
+        share_id = str(uuid.uuid4())[:8]
+        await db.study_notes.update_one({"id": note_id}, {"$set": {"share_id": share_id}})
+    return {"share_id": share_id}
+
+@api_router.get("/shared/{share_id}")
+async def get_shared_note(share_id: str):
+    note = await db.study_notes.find_one({"share_id": share_id}, {"_id": 0})
+    if not note:
+        raise HTTPException(status_code=404, detail="Shared note not found")
+    return note
+
+@api_router.post("/notes/{note_id}/flashcards")
+async def generate_flashcards(note_id: str):
+    note = await db.study_notes.find_one({"id": note_id}, {"_id": 0})
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    content = note.get("content", {})
+    cards = []
+    # Generate from key_points
+    for i, kp in enumerate(content.get("key_points", [])):
+        cards.append({"id": f"fc-{i+1}", "front": f"What is the significance of: {kp[:80]}...?" if len(kp) > 80 else f"Explain: {kp}", "back": kp})
+    # Generate from main_content sections
+    for si, section in enumerate(content.get("main_content", [])):
+        heading = section.get("heading", "")
+        points = section.get("points", [])
+        if heading and points:
+            cards.append({"id": f"fc-s{si+1}", "front": f"What are the key points about {heading}?", "back": " | ".join(points[:3])})
+
+    if not cards:
+        # Fallback: use AI
+        api_key = os.environ.get('EMERGENT_LLM_KEY')
+        if api_key:
+            chat = LlmChat(api_key=api_key, session_id=str(uuid.uuid4()),
+                system_message="Generate flashcards from study notes. Return ONLY valid JSON: {\"cards\": [{\"front\": \"question\", \"back\": \"answer\"}]}. Generate 5-10 cards."
+            ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+            summary = f"Subject: {note.get('subject')}, Topic: {note.get('chapter')}\nIntro: {content.get('introduction', '')[:200]}\nKey Points: {', '.join(content.get('key_points', [])[:5])}"
+            resp = await chat.send_message(UserMessage(text=f"Generate flashcards from these notes:\n{summary}"))
+            try:
+                cleaned = resp.strip()
+                if cleaned.startswith("```"):
+                    cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0]
+                parsed = json.loads(cleaned)
+                cards = [{"id": f"fc-ai-{i+1}", "front": c["front"], "back": c["back"]} for i, c in enumerate(parsed.get("cards", []))]
+            except Exception:
+                pass
+
+    return {"note_id": note_id, "subject": note.get("subject"), "chapter": note.get("chapter"), "cards": cards}
+
+@api_router.get("/tags")
+async def get_all_tags():
+    notes = await db.study_notes.find({"tags": {"$exists": True, "$ne": []}}, {"_id": 0, "tags": 1}).to_list(500)
+    all_tags = set()
+    for n in notes:
+        for t in n.get("tags", []):
+            all_tags.add(t)
+    return sorted(all_tags)
 
 # --- Planner Routes ---
 

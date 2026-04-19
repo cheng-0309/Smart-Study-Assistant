@@ -8,6 +8,7 @@ import PlannerPage from "./pages/PlannerPage";
 import PracticePage from "./pages/PracticePage";
 import HistoryPage from "./pages/HistoryPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import SharedNotePage from "./pages/SharedNotePage";
 
 function BackgroundBlobs() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="/practice" element={<PracticePage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/shared/:shareId" element={<SharedNotePage />} />
           </Routes>
         </div>
       </BrowserRouter>

@@ -115,6 +115,11 @@ export default function NotesPage() {
     }
   };
 
+  const handleNoteUpdate = (updatedNote) => {
+    setActiveNote(updatedNote);
+    setNotes((prev) => prev.map((n) => n.id === updatedNote.id ? updatedNote : n));
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header
@@ -141,7 +146,7 @@ export default function NotesPage() {
                   exit={{ opacity: 0 }}
                   className="mt-0"
                 >
-                  <NoteDisplay note={activeNote} />
+                  <NoteDisplay note={activeNote} onNoteUpdate={handleNoteUpdate} />
                 </motion.div>
               )}
 

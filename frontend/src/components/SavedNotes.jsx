@@ -1,5 +1,6 @@
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash, Clock, BookOpen } from "@phosphor-icons/react";
+import { Trash, Clock, BookOpen, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { Button } from "../components/ui/button";
 import { ScrollArea } from "../components/ui/scroll-area";
 import {
@@ -82,31 +83,64 @@ function NoteItem({ note, isActive, onSelect, onDelete }) {
 }
 
 export default function SavedNotes({ notes, onSelect, onDelete, activeId }) {
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return notes;
+    const q = search.toLowerCase();
+    return notes.filter(
+      (n) =>
+        n.subject?.toLowerCase().includes(q) ||
+        n.chapter?.toLowerCase().includes(q) ||
+        n.note_type?.toLowerCase().includes(q)
+    );
+  }, [notes, search]);
+
   return (
     <div
       data-testid="saved-notes-panel"
       className="h-full flex flex-col border-l border-border bg-card"
     >
       <div className="p-4 border-b border-border">
-        <div className="overline text-muted-foreground flex items-center gap-2">
+        <div className="overline text-muted-foreground flex items-center gap-2 mb-3">
           <Clock weight="bold" className="w-3.5 h-3.5" />
           History
+        </div>
+        <div className="relative">
+          <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            data-testid="notes-search-input"
+            type="text"
+            placeholder="Search notes..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-8 pl-8 pr-8 text-xs rounded-lg bg-[hsl(var(--muted))] border border-transparent focus:border-[hsl(var(--primary)/0.3)] outline-none placeholder:text-muted-foreground transition-colors"
+          />
+          {search && (
+            <button
+              data-testid="notes-search-clear"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="p-2">
           <AnimatePresence>
-            {notes.length === 0 && (
+            {filtered.length === 0 && (
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="text-sm text-muted-foreground text-center py-8 px-4"
               >
-                No saved notes yet. Generate your first note!
+                {search ? "No notes match your search." : "No saved notes yet. Generate your first note!"}
               </motion.p>
             )}
-            {notes.map((note) => (
+            {filtered.map((note) => (
               <NoteItem
                 key={note.id}
                 note={note}

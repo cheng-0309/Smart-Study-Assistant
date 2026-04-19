@@ -573,6 +573,22 @@ async def get_all_notes():
     notes = await db.study_notes.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return notes
 
+@api_router.get("/notes/search")
+async def search_notes(q: str = ""):
+    """Search notes by subject, chapter, or note_type"""
+    if not q.strip():
+        notes = await db.study_notes.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+        return notes
+    query = {
+        "$or": [
+            {"subject": {"$regex": q, "$options": "i"}},
+            {"chapter": {"$regex": q, "$options": "i"}},
+            {"note_type": {"$regex": q, "$options": "i"}},
+        ]
+    }
+    notes = await db.study_notes.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return notes
+
 @api_router.get("/notes/{note_id}", response_model=StudyNote)
 async def get_note(note_id: str):
     note = await db.study_notes.find_one({"id": note_id}, {"_id": 0})
@@ -793,6 +809,68 @@ async def delete_history_item(item_type: str, item_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Item not found")
     return {"message": "Deleted"}
+
+# --- Analytics Routes ---
+
+@api_router.get("/analytics")
+async def get_analytics():
+    notes_count = await db.study_notes.count_documents({})
+    plans_count = await db.study_plans.count_documents({})
+    exam_plans_count = await db.exam_plans.count_documents({})
+    practice_count = await db.practice_tests.count_documents({})
+
+    # Subject breakdown for notes
+    notes_cursor = db.study_notes.find({}, {"_id": 0, "subject": 1, "note_type": 1, "created_at": 1})
+    notes_list = await notes_cursor.to_list(500)
+    subject_counts = {}
+    note_type_counts = {}
+    for n in notes_list:
+        subj = n.get("subject", "Unknown")
+        subject_counts[subj] = subject_counts.get(subj, 0) + 1
+        nt = n.get("note_type", "detailed")
+        note_type_counts[nt] = note_type_counts.get(nt, 0) + 1
+
+    # Quiz stats
+    tests_cursor = db.practice_tests.find({}, {"_id": 0, "num_questions": 1, "question_type": 1, "subject": 1})
+    tests_list = await tests_cursor.to_list(500)
+    total_questions = sum(t.get("num_questions", 0) for t in tests_list)
+    quiz_type_counts = {}
+    for t in tests_list:
+        qt = t.get("question_type", "mcq")
+        quiz_type_counts[qt] = quiz_type_counts.get(qt, 0) + 1
+        subj = t.get("subject", "Unknown")
+        subject_counts[subj] = subject_counts.get(subj, 0) + 1
+
+    # Activity timeline (last 30 days)
+    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    activity = {}
+    for coll_name, label in [("study_notes", "notes"), ("study_plans", "plans"), ("exam_plans", "exam_plans"), ("practice_tests", "quizzes")]:
+        cursor = db[coll_name].find(
+            {"created_at": {"$gte": thirty_days_ago}},
+            {"_id": 0, "created_at": 1}
+        )
+        docs = await cursor.to_list(500)
+        for d in docs:
+            day = d["created_at"][:10]
+            if day not in activity:
+                activity[day] = {"date": day, "notes": 0, "plans": 0, "exam_plans": 0, "quizzes": 0}
+            activity[day][label] += 1
+
+    activity_list = sorted(activity.values(), key=lambda x: x["date"])
+
+    return {
+        "totals": {
+            "notes": notes_count,
+            "plans": plans_count,
+            "exam_plans": exam_plans_count,
+            "quizzes": practice_count,
+            "total_questions": total_questions,
+        },
+        "subject_breakdown": [{"subject": k, "count": v} for k, v in sorted(subject_counts.items(), key=lambda x: -x[1])],
+        "note_type_breakdown": [{"type": k, "count": v} for k, v in note_type_counts.items()],
+        "quiz_type_breakdown": [{"type": k, "count": v} for k, v in quiz_type_counts.items()],
+        "activity_timeline": activity_list,
+    }
 
 # Include router and middleware
 app.include_router(api_router)

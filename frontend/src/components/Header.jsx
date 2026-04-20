@@ -1,5 +1,6 @@
-import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock, ChartBar } from "@phosphor-icons/react";
+import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock, ChartBar, SignOut, User } from "@phosphor-icons/react";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -77,6 +78,13 @@ function NavBar() {
 
 function HeaderActions({ onToggleSidebar, sidebarOpen }) {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <div className="flex items-center gap-1.5">
@@ -109,6 +117,28 @@ function HeaderActions({ onToggleSidebar, sidebarOpen }) {
           </TooltipTrigger>
           <TooltipContent side="bottom">Switch to {theme === "dark" ? "Light" : "Dark"} mode</TooltipContent>
         </Tooltip>
+        {isAuthenticated && (
+          <>
+            <div className="hidden sm:flex items-center gap-1.5 ml-1 px-2.5 py-1 rounded-lg bg-[hsl(var(--primary)/0.06)] border border-[hsl(var(--primary)/0.1)]">
+              <User className="w-3.5 h-3.5 text-[hsl(var(--primary))]" weight="bold" />
+              <span className="text-xs font-medium text-[hsl(var(--primary))] max-w-[120px] truncate">{user?.name || user?.email?.split("@")[0]}</span>
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid="logout-btn"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  className="rounded-lg h-9 w-9 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <SignOut className="w-[18px] h-[18px]" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Sign out</TooltipContent>
+            </Tooltip>
+          </>
+        )}
       </TooltipProvider>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = "/api";
 
 const QUESTION_TYPES = [
   { value: "mixed", label: "Mixed" },
@@ -696,7 +696,7 @@ function QuizView({ test }) {
             const idx = questions.indexOf(qu);
             return answers[idx] !== undefined && answers[idx] !== "";
           }).length;
-          axios.post(`${API}/quiz-scores`, {
+          api.post(`${API}/quiz-scores`, {
             test_id: test.id,
             subject: test.subject,
             chapter: test.chapter,
@@ -795,7 +795,7 @@ export default function PracticePage() {
   useEffect(() => {
     async function loadTests() {
       try {
-        const res = await axios.get(`${API}/practices`);
+        const res = await api.get(`${API}/practices`);
         setTests(res.data);
       } catch {
         /* silent on initial load */
@@ -807,7 +807,7 @@ export default function PracticePage() {
   const handleGenerate = async (subject, chapter, numQuestions, questionType, difficulty) => {
     setIsLoading(true);
     try {
-      const res = await axios.post(`${API}/practice/generate`, {
+      const res = await api.post(`${API}/practice/generate`, {
         subject,
         chapter,
         num_questions: numQuestions,
@@ -835,7 +835,7 @@ export default function PracticePage() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API}/practices/${id}`);
+      await api.delete(`${API}/practices/${id}`);
       setTests((prev) => prev.filter((t) => t.id !== id));
       if (activeTest?.id === id) setActiveTest(null);
       toast.success("Test deleted");

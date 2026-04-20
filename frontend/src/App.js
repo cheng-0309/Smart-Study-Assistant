@@ -1,7 +1,11 @@
 import "@/App.css";
+import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
 import { ThemeProvider } from "./context/ThemeContext";
-import { Toaster } from "./components/ui/sonner";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 import HomePage from "./pages/HomePage";
 import NotesPage from "./pages/NotesPage";
 import PlannerPage from "./pages/PlannerPage";
@@ -9,35 +13,36 @@ import PracticePage from "./pages/PracticePage";
 import HistoryPage from "./pages/HistoryPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SharedNotePage from "./pages/SharedNotePage";
-
-function BackgroundBlobs() {
-  return (
-    <div className="bg-blobs" aria-hidden="true">
-      <div className="bg-blob bg-blob-1" />
-      <div className="bg-blob bg-blob-2" />
-      <div className="bg-blob bg-blob-3" />
-    </div>
-  );
-}
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 
 function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <BackgroundBlobs />
-        <div className="relative z-10">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/notes" element={<NotesPage />} />
-            <Route path="/planner" element={<PlannerPage />} />
-            <Route path="/practice" element={<PracticePage />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/shared/:shareId" element={<SharedNotePage />} />
-          </Routes>
+      <AuthProvider>
+        <div className="bg-blobs">
+          <div className="bg-blob bg-blob-1" />
+          <div className="bg-blob bg-blob-2" />
+          <div className="bg-blob bg-blob-3" />
         </div>
-      </BrowserRouter>
-      <Toaster position="bottom-right" richColors />
+        <Toaster richColors position="top-right" />
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/shared/:shareId" element={<SharedNotePage />} />
+
+            {/* Protected routes */}
+            <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+            <Route path="/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
+            <Route path="/planner" element={<ProtectedRoute><PlannerPage /></ProtectedRoute>} />
+            <Route path="/practice" element={<ProtectedRoute><PracticePage /></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

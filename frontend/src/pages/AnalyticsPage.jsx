@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import Header from "../components/Header";
 import { motion } from "framer-motion";
 import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning, Trophy, Target, Fire, DownloadSimple, Lightbulb, ArrowRight, Warning, Sparkle, Barbell } from "@phosphor-icons/react";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = "/api";
 
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
 const fadeUp = {
@@ -322,7 +322,7 @@ export default function AnalyticsPage() {
   const [recsLoading, setRecsLoading] = useState(false);
 
   useEffect(() => {
-    axios.get(`${API}/analytics`)
+    api.get(`${API}/analytics`)
       .then((res) => setData(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -330,7 +330,7 @@ export default function AnalyticsPage() {
 
   const loadRecommendations = () => {
     setRecsLoading(true);
-    axios.get(`${API}/analytics/recommendations`)
+    api.get(`${API}/analytics/recommendations`)
       .then((res) => setRecs(res.data.recommendations))
       .catch(() => setRecs([]))
       .finally(() => setRecsLoading(false));
@@ -339,7 +339,7 @@ export default function AnalyticsPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await axios.get(`${API}/analytics/export`);
+      const res = await api.get(`${API}/analytics/export`);
       const blob = new Blob([res.data.report], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

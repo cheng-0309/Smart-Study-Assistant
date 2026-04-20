@@ -11,14 +11,29 @@ import {
   TooltipTrigger,
 } from "../components/ui/tooltip";
 
-const NAV_ITEMS = [
-  { path: "/notes", label: "Notes", icon: NotePencil },
-  { path: "/planner", label: "Planner", icon: CalendarDots },
-  { path: "/practice", label: "Practice", icon: Exam },
-  { path: "/goals", label: "Goals", icon: Target },
-  { path: "/pomodoro", label: "Pomodoro", icon: Timer },
-  { path: "/history", label: "History", icon: Clock },
-  { path: "/analytics", label: "Analytics", icon: ChartBar },
+const NAV_GROUPS = [
+  {
+    label: "Create",
+    items: [
+      { path: "/notes", label: "Notes", icon: NotePencil },
+      { path: "/planner", label: "Planner", icon: CalendarDots },
+      { path: "/practice", label: "Practice", icon: Exam },
+    ],
+  },
+  {
+    label: "Track",
+    items: [
+      { path: "/goals", label: "Goals", icon: Target },
+      { path: "/pomodoro", label: "Timer", icon: Timer },
+    ],
+  },
+  {
+    label: "Review",
+    items: [
+      { path: "/history", label: "History", icon: Clock },
+      { path: "/analytics", label: "Analytics", icon: ChartBar },
+    ],
+  },
 ];
 
 function Logo() {
@@ -42,38 +57,39 @@ function NavBar() {
 
   return (
     <motion.nav
-      className="flex items-center gap-1"
+      className="flex items-center gap-0.5"
       data-testid="main-nav"
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
-      {NAV_ITEMS.map(({ path, label, icon: Icon }, i) => {
-        const isActive = location.pathname === path;
-        return (
-          <motion.div
-            key={path}
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: i * 0.05, ease: "easeOut" }}
-          >
-            <Button
-              data-testid={`nav-${label.toLowerCase()}`}
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(path)}
-              className={`rounded-lg h-9 gap-1.5 text-sm font-medium transition-all ${
-                isActive
-                  ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] nav-active-indicator"
-                  : "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--primary)/0.05)]"
-              }`}
-            >
-              <Icon weight={isActive ? "bold" : "regular"} className="w-4 h-4" />
-              <span className="hidden sm:inline">{label}</span>
-            </Button>
-          </motion.div>
-        );
-      })}
+      {NAV_GROUPS.map((group, gi) => (
+        <div key={group.label} className="flex items-center">
+          {gi > 0 && (
+            <div className="w-px h-5 bg-border/60 mx-1.5" />
+          )}
+          {group.items.map(({ path, label, icon: Icon }) => {
+            const isActive = location.pathname === path;
+            return (
+              <Button
+                key={path}
+                data-testid={`nav-${label.toLowerCase()}`}
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(path)}
+                className={`rounded-lg h-8 gap-1.5 text-xs font-medium transition-all px-2.5 ${
+                  isActive
+                    ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] nav-active-indicator"
+                    : "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--primary)/0.05)]"
+                }`}
+              >
+                <Icon weight={isActive ? "bold" : "regular"} className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">{label}</span>
+              </Button>
+            );
+          })}
+        </div>
+      ))}
     </motion.nav>
   );
 }

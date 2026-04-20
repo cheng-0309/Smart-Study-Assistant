@@ -1,106 +1,131 @@
 {
-  "theme_strategy": {
-    "primary_theme": "Light",
-    "supported_themes": ["Light", "Dark"],
-    "archetype": "Archetype 4 (Swiss & High-Contrast)",
-    "vibe": "Authority, clarity, truth. A digital 'Control Room' for study notes. Stripped of all fluff.",
-    "rationale": "For an educational study tool, users need focus. The Swiss Brutalist aesthetic provides stark clarity and structural hierarchy. Content is the sole focus."
-  },
+  "project_name": "SaaS Productivity & Tracking App",
+  "theme": "dark",
+  "archetype": "Swiss & High-Contrast (Archetype 4)",
+  "vibe": "Objective, rigid, functional, clear, highly organized",
   "typography": {
-    "rules": "Radical weight contrast (Black vs Light). Do not use Inter for headings. Use tight tracking for headings.",
-    "fonts": {
-      "headings": {
-        "family": "Chivo",
-        "import_url": "https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;700;900&display=swap",
-        "css_var": "--font-heading",
-        "usage": "H1 (max text-6xl), H2, H3. Apply tracking-tight."
+    "fonts": [
+      {
+        "role": "heading",
+        "family": "Outfit, sans-serif",
+        "weight": "700, 800",
+        "usage": "H1-H4, large metric numbers, section titles"
       },
-      "body": {
-        "family": "DM Sans",
-        "import_url": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap",
-        "css_var": "--font-sans",
-        "usage": "All paragraph and standard UI text."
-      },
-      "mono": {
-        "family": "JetBrains Mono",
-        "import_url": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap",
-        "css_var": "--font-mono",
-        "usage": "Overlines, labels, formulas, and metadata (date, chapter number). Use uppercase + wide tracking (tracking-widest)."
+      {
+        "role": "body",
+        "family": "IBM Plex Sans, sans-serif",
+        "weight": "400, 500",
+        "usage": "Paragraphs, navigation links, secondary text, timestamps"
       }
+    ],
+    "hierarchy": {
+      "h1": "text-4xl lg:text-5xl font-extrabold tracking-tight",
+      "h2": "text-2xl lg:text-3xl font-bold tracking-tight",
+      "h3": "text-xl font-semibold tracking-tight",
+      "body": "text-sm md:text-base leading-relaxed",
+      "metric": "text-5xl font-black tracking-tighter leading-none",
+      "overline": "text-xs font-semibold uppercase tracking-[0.2em]"
     }
   },
   "colors": {
-    "light": {
-      "background": "#F9F9F6",
+    "light_mode": {
+      "background": "#F9FAFB",
       "surface": "#FFFFFF",
-      "surface_glass": "rgba(255, 255, 255, 0.7)",
-      "border": "#E5E5E0",
-      "text_primary": "#0A0A0A",
-      "text_secondary": "#5C5C59",
-      "primary": "#FF3333",
-      "primary_hover": "#CC0000",
-      "accent": "#0033FF"
+      "border": "#E5E7EB",
+      "text_primary": "#111827",
+      "text_secondary": "#6B7280",
+      "primary_brand": "#002FA7",
+      "accent_success": "#10B981",
+      "accent_warning": "#F59E0B",
+      "accent_danger": "#EF4444"
     },
-    "dark": {
-      "background": "#0C0C0C",
-      "surface": "#1A1A1A",
-      "surface_glass": "rgba(12, 12, 12, 0.7)",
-      "border": "#333333",
-      "text_primary": "#F3F3F3",
-      "text_secondary": "#A1A1A1",
-      "primary": "#FF4D4D",
-      "primary_hover": "#FF8080",
-      "accent": "#6680FF"
-    },
-    "rules": "Monochrome UI. Color exists only to guide action. Never use pure #000000, tint neutrals. Buttons should use primary color."
+    "dark_mode": {
+      "background": "#09090B",
+      "surface": "#18181B",
+      "border": "#27272A",
+      "text_primary": "#F9FAFB",
+      "text_secondary": "#A1A1AA",
+      "primary_brand": "#3B82F6",
+      "accent_success": "#10B981",
+      "accent_warning": "#F59E0B",
+      "accent_danger": "#EF4444"
+    }
   },
   "layout_and_spacing": {
-    "strategy": "The 'Control Room' Grid",
-    "rules": "Dense, data correlation. Strict 1px borders. Use generous internal padding (p-6, p-8) for containers. Optical alignment over geometric.",
-    "surface_styles": "Grid Borders: Expose the skeleton. Container uses border-collapse style layout, items use border-r border-b. 0px or max 4px border radius."
+    "system": "The 'Control Room' Grid",
+    "strategy": "High density, clear data correlation, functional scanning.",
+    "sidebar": {
+      "width": "w-64",
+      "grouping": [
+        { "title": "Create", "items": ["Notes", "Planner", "Practice"] },
+        { "title": "Track", "items": ["Goals", "Timer"] },
+        { "title": "Review", "items": ["History", "Analytics"] }
+      ]
+    },
+    "dashboard_grid": {
+      "base": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4",
+      "gap": "gap-4 md:gap-6",
+      "metrics_row": "col-span-1",
+      "activity_feed": "col-span-1 lg:col-span-2 row-span-2",
+      "goals_progress": "col-span-1 lg:col-span-2 row-span-2"
+    },
+    "paddings": {
+      "dashboard_container": "p-6 md:p-8 lg:p-12",
+      "cards": "p-6"
+    }
   },
-  "component_guidelines": {
-    "navigation": "Sticky glassmorphism header (Crystal variant). backdrop-blur-xl bg-white/70 (light) or bg-black/60 (dark) with 1px delicate bottom border. Must contain Logo, navigation links, and a tactile Theme Switcher.",
-    "buttons": "Sharp corners (rounded-none or rounded-sm). Solid brand color for primary, transparent with 1px border for secondary. explicit hover states.",
-    "inputs": "Shadcn based. Heavily customized to remove Vercel-look. Square edges, high contrast borders.",
-    "notes_display": "Bento Grid layout for notes: The Hero (Key Concepts, col-span-8), The Square (Formulas, col-span-4), The Tall (Quick Revision, col-span-4 row-span-2). Use Markdown rendering for the note content.",
-    "cards": "Flat background, 1px subtle border (border-border), no shadow by default. Hover: slight lift (-translate-y-1), subtle shadow (shadow-lg), border color darkens.",
-    "icons": "Use Phosphor Icons (@phosphor-icons/react) for a dense, highly legible dashboard look."
+  "components": {
+    "surfaces": {
+      "style": "Flat solid surfaces. 1px solid border. Very subtle shadows only on hover.",
+      "radius": "rounded-xl",
+      "border_width": "border"
+    },
+    "navigation_menu": {
+      "style": "Vertical collapsible (or visually distinct) sidebar. Active state highlighted with primary brand color background (10% opacity) and left border stroke (3px). Hover states explicitly define background and text color.",
+      "text": "IBM Plex Sans, text-sm, font-medium"
+    },
+    "cards": {
+      "default": "bg-surface border border-border rounded-xl p-6 flex flex-col gap-4",
+      "metric_card": "hover:-translate-y-1 transition-transform duration-200"
+    },
+    "buttons": {
+      "primary": "bg-primary_brand text-white font-medium rounded-lg px-4 py-2 hover:bg-opacity-90 transition-colors",
+      "quick_action": "flex items-center gap-2 px-4 py-3 bg-surface border border-border rounded-xl hover:border-primary_brand hover:text-primary_brand transition-all"
+    }
   },
-  "animations": {
-    "rules": "Minimalist. Hover states, focus states, subtle entrance staggered transitions. Use framer-motion."
+  "motion_and_interactions": {
+    "hover": "Subtle border color shifts, 1px lift for interactive cards.",
+    "transitions": "transition-all duration-200 ease-in-out",
+    "active": "Scale down slightly (scale-95) on click."
   },
-  "testing": {
-    "rules": "All interactive elements MUST include data-testid attribute using kebab-case role-based names (e.g., data-testid='subject-input', data-testid='generate-btn', data-testid='theme-toggle')."
-  },
-  "media": {
-    "rules": "No generic placeholder images. Use provided assets.",
-    "image_urls": [
-      {
-        "url": "https://static.prod-images.emergentagent.com/jobs/3ba5de25-cdd1-4539-b91c-3218a68f29c3/images/a3077d24ab854e11dec29a9c6369fe64b401c9244fa326311aa6e765a1178a75.png",
-        "category": "empty_state",
-        "description": "Minimalist Swiss poster style abstract geometric composition. Use this in the main notes display area when no notes are generated yet."
-      },
-      {
-        "url": "https://static.prod-images.emergentagent.com/jobs/3ba5de25-cdd1-4539-b91c-3218a68f29c3/images/ac3251866115fe9582c790e1c86b7d58a128146c87551b50975ecc766da28ac8.png",
-        "category": "header_background",
-        "description": "Crisp architectural grid lines on warm off-white paper texture. Use as a subtle background pattern for the hero section or header if needed."
-      },
-      {
-        "url": "https://images.pexels.com/photos/8092410/pexels-photo-8092410.jpeg",
-        "category": "general_aesthetic",
-        "description": "Minimalist workspace with an open notebook. Use for the 'Saved Notes' empty state or a landing/welcome page visual."
-      }
-    ]
+  "media_urls": [
+    {
+      "category": "user_avatar",
+      "url": "https://images.unsplash.com/photo-1660251406411-589fa0b05604?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwxfHx1c2VyJTIwcHJvZmlsZSUyMHBvcnRyYWl0JTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc3NjcxMDU3N3ww&ixlib=rb-4.1.0&q=85",
+      "description": "Professional user portrait for sidebar profile"
+    },
+    {
+      "category": "background_texture",
+      "url": "https://images.pexels.com/photos/3137073/pexels-photo-3137073.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Minimalist geometric background for subtle data visualizations or empty states"
+    }
+  ],
+  "icons_library": "lucide-react",
+  "testing_attributes": {
+    "requirement": "All interactive elements MUST have data-testid. Examples: data-testid='sidebar-notes-link', data-testid='quick-action-timer', data-testid='theme-toggle-btn'."
   },
   "instructions_to_main_agent": [
-    "Install and setup Tailwind and Shadcn.",
-    "Apply fonts via Google Fonts in index.css (Chivo, DM Sans, JetBrains Mono).",
-    "Setup next-themes for Light/Dark mode toggling.",
-    "Implement the 'Control Room' bento grid layout for the note display.",
-    "Ensure all buttons/inputs have hover and focus states defined.",
-    "Use @phosphor-icons/react for the UI.",
-    "Use standard Markdown components to render the AI output.",
-    "Add 'data-testid' to every form input, button, and navigation item."
+    "Write components in .js and .jsx files, NOT .tsx (TypeScript is not used).",
+    "Build a persistent left sidebar layout (`w-64`) on desktop, collapsing to a bottom tab or hamburger on mobile.",
+    "Group the sidebar links explicitly under uppercase overlines: 'CREATE' (Notes, Planner, Practice), 'TRACK' (Goals, Timer), 'REVIEW' (History, Analytics).",
+    "Replace the flat homepage with a dashboard layout using a bento-style 'Control Room' grid (grid-cols-4).",
+    "Include a 'Quick Actions' row at the top of the dashboard (e.g., 'New Note', 'Start Timer', 'Log Practice').",
+    "Include 3-4 Metric Cards (e.g., 'Study Time', 'Current Streak', 'Tasks Completed').",
+    "Include an 'Active Goals' section with progress bars (Shadcn Progress component).",
+    "Include a 'Recent Activity' timeline or list on the right side of the dashboard grid.",
+    "Place the user avatar, logout button, and theme toggle fixed at the bottom of the sidebar.",
+    "Use standard Shadcn components for Cards, Buttons, Avatars, Progress, and Badges.",
+    "Ensure the design remains strictly within Archetype 4: clean, highly functional, 1px borders, minimal shadows, high data clarity.",
+    "ALL interactive elements (buttons, links, inputs, tabs) MUST include a 'data-testid' attribute (e.g. data-testid='dashboard-new-note-btn')."
   ]
 }

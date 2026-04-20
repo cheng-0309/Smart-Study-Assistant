@@ -86,3 +86,5 @@ Build a study assistant that generates structured study notes based on Subject a
 - [x] Flashcard generation from notes (auto-generates from key_points & content sections, flip animation viewer) — Feb 2026
 - [x] Folder/tag organization (add/remove tags on notes, GET /api/tags for all tags) — Feb 2026
 - [x] Quiz score tracking in Analytics (accuracy gauge, best/worst subjects, score trends) — Feb 2026
+- [x] Study streak tracking (current/longest streak, weekly heatmap, home page badge) — Feb 2026
+- [x] Export analytics as report (downloadable .txt with full study stats) — Feb 2026

@@ -324,7 +324,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     api.get(`${API}/analytics`)
       .then((res) => setData(res.data))
-      .catch(() => {})
+      .catch(() => { toast.error("Failed to load analytics"); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -332,7 +332,7 @@ export default function AnalyticsPage() {
     setRecsLoading(true);
     api.get(`${API}/analytics/recommendations`)
       .then((res) => setRecs(res.data.recommendations))
-      .catch(() => setRecs([]))
+      .catch(() => { toast.error("Failed to load recommendations"); setRecs([]); })
       .finally(() => setRecsLoading(false));
   };
 
@@ -348,7 +348,7 @@ export default function AnalyticsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      // silent
+      toast.error("Failed to export report");
     } finally {
       setExporting(false);
     }

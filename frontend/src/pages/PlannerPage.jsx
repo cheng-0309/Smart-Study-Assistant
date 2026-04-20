@@ -20,6 +20,7 @@ import {
 import Header from "../components/Header";
 import ExamPlanForm from "../components/ExamPlanForm";
 import ExamPlanDisplay from "../components/ExamPlanDisplay";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { sendToWebhook } from "../lib/webhook";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -83,6 +84,7 @@ function PlannerForm({ onGenerate, isLoading }) {
             placeholder="e.g. Organic Chemistry, World War II"
             value={topic}
             onChange={(e) => { setTopic(e.target.value); if (error) setError(""); }}
+            maxLength={120}
             className={`rounded-lg border-border h-11 bg-background ${
               error && !topic.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}
@@ -368,6 +370,7 @@ export default function PlannerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("regular");
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null, isExam: false });
 
   useEffect(() => {
     async function loadPlans() {
@@ -443,6 +446,12 @@ export default function PlannerPage() {
   };
 
   const handleDelete = async (id, isExam) => {
+    setDeleteConfirm({ open: true, id, isExam });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { id, isExam } = deleteConfirm;
+    setDeleteConfirm({ open: false, id: null, isExam: false });
     try {
       if (isExam) {
         await api.delete(`${API}/exam-planners/${id}`);
@@ -604,6 +613,13 @@ export default function PlannerPage() {
           )}
         </AnimatePresence>
       </div>
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => !open && setDeleteConfirm({ open: false, id: null, isExam: false })}
+        title="Delete this plan?"
+        description="This will permanently remove this study plan. This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

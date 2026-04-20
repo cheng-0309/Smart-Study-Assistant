@@ -29,6 +29,7 @@ import { Label } from "../components/ui/label";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
+import ConfirmDialog from "../components/ConfirmDialog";
 import {
   Select,
   SelectContent,
@@ -126,6 +127,7 @@ function PracticeForm({ onGenerate, isLoading }) {
             placeholder="e.g. Physics, History"
             value={subject}
             onChange={(e) => { setSubject(e.target.value); clearError(); }}
+            maxLength={80}
             className={`rounded-lg border-border h-11 bg-background ${
               error && !subject.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}
@@ -142,6 +144,7 @@ function PracticeForm({ onGenerate, isLoading }) {
             placeholder="e.g. Newton's Laws"
             value={chapter}
             onChange={(e) => { setChapter(e.target.value); clearError(); }}
+            maxLength={120}
             className={`rounded-lg border-border h-11 bg-background ${
               error && !chapter.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}
@@ -704,7 +707,20 @@ function QuizView({ test }) {
             correct,
             total_subjective: subjective.length,
             attempted_subjective: attemptedSubj,
-          }).catch(() => {});
+          }).then(() => {
+            const scorePct = gradable.length > 0 ? Math.round((correct / gradable.length) * 100) : 0;
+            sendToWebhook({
+              type: "quiz_score",
+              subject: test.subject,
+              chapter: test.chapter,
+              score_pct: scorePct,
+              correct,
+              total_gradable: gradable.length,
+              total_subjective: subjective.length,
+              attempted_subjective: attemptedSubj,
+              timestamp: new Date().toISOString(),
+            });
+          }).catch(() => { toast.error("Failed to save quiz score"); });
         }}
         onReset={() => { setAnswers({}); setSubmitted(false); setShowModels({}); setCurrentQ(0); }}
         onDotClick={setCurrentQ}
@@ -791,6 +807,7 @@ export default function PracticePage() {
   const [activeTest, setActiveTest] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
 
   useEffect(() => {
     async function loadTests() {
@@ -834,6 +851,12 @@ export default function PracticePage() {
   };
 
   const handleDelete = async (id) => {
+    setDeleteConfirm({ open: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { id } = deleteConfirm;
+    setDeleteConfirm({ open: false, id: null });
     try {
       await api.delete(`${API}/practices/${id}`);
       setTests((prev) => prev.filter((t) => t.id !== id));
@@ -935,6 +958,13 @@ export default function PracticePage() {
           )}
         </AnimatePresence>
       </div>
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => !open && setDeleteConfirm({ open: false, id: null })}
+        title="Delete this practice test?"
+        description="This will permanently remove this test and its questions. This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

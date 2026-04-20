@@ -64,6 +64,7 @@ export default function NoteForm({ onGenerate, isLoading }) {
             placeholder="e.g. Physics, History, Biology"
             value={subject}
             onChange={(e) => { setSubject(e.target.value); clearError(); }}
+            maxLength={80}
             className={`rounded-lg border-border h-11 bg-background focus:ring-1 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] ${
               error && !subject.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}
@@ -81,6 +82,7 @@ export default function NoteForm({ onGenerate, isLoading }) {
             placeholder="e.g. Newton's Laws of Motion"
             value={chapter}
             onChange={(e) => { setChapter(e.target.value); clearError(); }}
+            maxLength={120}
             className={`rounded-lg border-border h-11 bg-background focus:ring-1 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] ${
               error && !chapter.trim() ? "border-destructive ring-1 ring-destructive" : ""
             }`}

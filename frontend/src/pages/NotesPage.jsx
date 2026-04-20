@@ -6,6 +6,7 @@ import NoteForm from "../components/NoteForm";
 import NoteDisplay from "../components/NoteDisplay";
 import SavedNotes from "../components/SavedNotes";
 import EmptyState from "../components/EmptyState";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { AnimatePresence, motion } from "framer-motion";
 import { sendToWebhook } from "../lib/webhook";
 
@@ -65,6 +66,7 @@ export default function NotesPage() {
   const [activeNote, setActiveNote] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null, bulk: false, ids: [] });
 
   useEffect(() => {
     async function loadNotes() {
@@ -105,13 +107,30 @@ export default function NotesPage() {
   };
 
   const handleDelete = async (id) => {
-    try {
-      await api.delete(`${API}/notes/${id}`);
-      setNotes((prev) => prev.filter((n) => n.id !== id));
-      if (activeNote?.id === id) setActiveNote(null);
-      toast.success("Note deleted");
-    } catch {
-      toast.error("Failed to delete note");
+    setDeleteConfirm({ open: true, id, bulk: false, ids: [] });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { id, bulk, ids } = deleteConfirm;
+    setDeleteConfirm({ open: false, id: null, bulk: false, ids: [] });
+    if (bulk) {
+      try {
+        await Promise.all(ids.map((i) => api.delete(`${API}/notes/${i}`)));
+        setNotes((prev) => prev.filter((n) => !ids.includes(n.id)));
+        if (activeNote && ids.includes(activeNote.id)) setActiveNote(null);
+        toast.success(`${ids.length} note(s) deleted`);
+      } catch {
+        toast.error("Failed to delete some notes");
+      }
+    } else {
+      try {
+        await api.delete(`${API}/notes/${id}`);
+        setNotes((prev) => prev.filter((n) => n.id !== id));
+        if (activeNote?.id === id) setActiveNote(null);
+        toast.success("Note deleted");
+      } catch {
+        toast.error("Failed to delete note");
+      }
     }
   };
 
@@ -121,14 +140,7 @@ export default function NotesPage() {
   };
 
   const handleBulkDelete = async (ids) => {
-    try {
-      await Promise.all(ids.map((id) => api.delete(`${API}/notes/${id}`)));
-      setNotes((prev) => prev.filter((n) => !ids.includes(n.id)));
-      if (activeNote && ids.includes(activeNote.id)) setActiveNote(null);
-      toast.success(`${ids.length} note(s) deleted`);
-    } catch {
-      toast.error("Failed to delete some notes");
-    }
+    setDeleteConfirm({ open: true, id: null, bulk: true, ids });
   };
 
   const handleBulkTag = async (ids, tag) => {
@@ -218,6 +230,13 @@ export default function NotesPage() {
           )}
         </AnimatePresence>
       </div>
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => !open && setDeleteConfirm({ open: false, id: null, bulk: false, ids: [] })}
+        title={deleteConfirm.bulk ? `Delete ${deleteConfirm.ids.length} note(s)?` : "Delete this note?"}
+        description="This will permanently remove the selected note(s). This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

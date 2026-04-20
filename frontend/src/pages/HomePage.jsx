@@ -76,7 +76,7 @@ function HeroSection() {
   useEffect(() => {
     api.get(`${API}/analytics`)
       .then((res) => setStreak(res.data?.streaks))
-      .catch(() => {});
+      .catch(() => { /* non-critical streak load */ });
   }, []);
 
   return (

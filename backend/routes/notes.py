@@ -1,18 +1,22 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List
 import uuid
 from database import db
 from models import StudyNote, NoteContent, GenerateRequest, NoteUpdateRequest
 from ai_service import generate_notes_with_ai, generate_flashcards_ai
 from auth import get_current_user
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 import logging
 
 logger = logging.getLogger(__name__)
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api", tags=["notes"])
 
 
 @router.post("/notes/generate", response_model=StudyNote)
-async def generate_notes(req: GenerateRequest, user=Depends(get_current_user)):
+@limiter.limit("10/minute")
+async def generate_notes(request: Request, req: GenerateRequest, user=Depends(get_current_user)):
     valid_note_types = ["quick_revision", "detailed", "exam_focused"]
     note_type = req.note_type if req.note_type in valid_note_types else "detailed"
     content = await generate_notes_with_ai(req.subject, req.chapter, note_type)

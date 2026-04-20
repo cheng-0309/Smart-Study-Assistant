@@ -1,20 +1,24 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List
 from datetime import datetime, timezone, timedelta
 from database import db
 from models import StudyPlan, PlannerRequest, ExamPlan, ExamPlanRequest, ExamPlanDay
 from ai_service import generate_planner_with_ai, format_plan_plain_text, generate_exam_plan_with_ai
 from auth import get_current_user
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 import logging
 
 logger = logging.getLogger(__name__)
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api", tags=["planner"])
 
 
 # --- Regular Planner ---
 
 @router.post("/planner/generate", response_model=StudyPlan)
-async def generate_planner(req: PlannerRequest, user=Depends(get_current_user)):
+@limiter.limit("10/minute")
+async def generate_planner(request: Request, req: PlannerRequest, user=Depends(get_current_user)):
     days = await generate_planner_with_ai(req.topic, req.hours_per_day, req.num_days)
     plan = StudyPlan(
         topic=req.topic,
@@ -48,7 +52,8 @@ async def delete_planner(plan_id: str, user=Depends(get_current_user)):
 # --- Exam Planner ---
 
 @router.post("/planner/exam/generate", response_model=ExamPlan)
-async def generate_exam_plan(req: ExamPlanRequest, user=Depends(get_current_user)):
+@limiter.limit("10/minute")
+async def generate_exam_plan(request: Request, req: ExamPlanRequest, user=Depends(get_current_user)):
     try:
         exam_date = datetime.fromisoformat(req.exam_date.replace("Z", "+00:00")).date()
     except ValueError:

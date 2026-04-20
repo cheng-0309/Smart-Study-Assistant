@@ -1,17 +1,21 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List
 from database import db
 from models import PracticeTest, PracticeRequest, QuizScoreRecord, QuizScoreRequest
 from ai_service import generate_practice_with_ai
 from auth import get_current_user
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 import logging
 
 logger = logging.getLogger(__name__)
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api", tags=["practice"])
 
 
 @router.post("/practice/generate", response_model=PracticeTest)
-async def generate_practice(req: PracticeRequest, user=Depends(get_current_user)):
+@limiter.limit("10/minute")
+async def generate_practice(request: Request, req: PracticeRequest, user=Depends(get_current_user)):
     valid_types = ["mixed", "mcq", "true_false", "numerical", "short_answer", "long_answer"]
     q_type = req.question_type if req.question_type in valid_types else "mixed"
     diff = req.difficulty if req.difficulty in ("easy", "medium", "hard", "mixed") else "mixed"

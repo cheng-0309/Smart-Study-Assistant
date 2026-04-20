@@ -26,6 +26,7 @@ import {
   Article,
 } from "@phosphor-icons/react";
 import Header from "../components/Header";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -561,6 +562,7 @@ export default function HistoryPage() {
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, type: null, id: null });
 
   useEffect(() => {
     async function loadHistory() {
@@ -579,6 +581,12 @@ export default function HistoryPage() {
   }, [filter]);
 
   const handleDelete = async (type, id) => {
+    setDeleteConfirm({ open: true, type, id });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { type, id } = deleteConfirm;
+    setDeleteConfirm({ open: false, type: null, id: null });
     try {
       await api.delete(`${API}/history/${type}/${id}`);
       setItems((prev) => prev.filter((it) => it.id !== id));
@@ -686,6 +694,13 @@ export default function HistoryPage() {
           </div>
         </div>
       </main>
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => !open && setDeleteConfirm({ open: false, type: null, id: null })}
+        title="Delete this item?"
+        description="This will permanently remove this item from your history. This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

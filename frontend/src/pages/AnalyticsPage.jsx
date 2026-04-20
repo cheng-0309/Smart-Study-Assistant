@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Header from "../components/Header";
 import { motion } from "framer-motion";
-import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning, Trophy, Target } from "@phosphor-icons/react";
+import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning, Trophy, Target, Fire, DownloadSimple } from "@phosphor-icons/react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -235,9 +235,89 @@ function ScoreTrend({ data }) {
   );
 }
 
+function StreakSection({ streaks }) {
+  if (!streaks) return null;
+  const { current_streak, longest_streak, total_active_days, weekly_heatmap } = streaks;
+  const maxCount = Math.max(...(weekly_heatmap || []).map((d) => d.count), 1);
+  const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
+
+  return (
+    <motion.div variants={fadeUp} className="glass-card p-5" data-testid="streak-section">
+      <h3 className="text-sm font-bold mb-4" style={{ fontFamily: "var(--font-heading)" }}>Study Streaks</h3>
+      <div className="flex items-center gap-6 mb-5">
+        <div className="flex items-center gap-2">
+          <Fire weight="fill" className={`w-6 h-6 ${current_streak > 0 ? "text-orange-500" : "text-muted-foreground/30"}`} />
+          <div>
+            <div className="text-2xl font-black" style={{ fontFamily: "var(--font-heading)" }}>{current_streak}</div>
+            <div className="text-[10px] text-muted-foreground">Current Streak</div>
+          </div>
+        </div>
+        <div className="w-px h-10 bg-border" />
+        <div>
+          <div className="text-lg font-black" style={{ fontFamily: "var(--font-heading)" }}>{longest_streak}</div>
+          <div className="text-[10px] text-muted-foreground">Longest Streak</div>
+        </div>
+        <div className="w-px h-10 bg-border" />
+        <div>
+          <div className="text-lg font-black" style={{ fontFamily: "var(--font-heading)" }}>{total_active_days}</div>
+          <div className="text-[10px] text-muted-foreground">Active Days</div>
+        </div>
+      </div>
+
+      {/* Heatmap */}
+      {weekly_heatmap && weekly_heatmap.length > 0 && (
+        <div>
+          <div className="text-[10px] text-muted-foreground mb-2 font-mono">Last 7 Weeks</div>
+          <div className="flex gap-[3px]">
+            <div className="flex flex-col gap-[3px] mr-1">
+              {dayLabels.map((l, i) => (
+                <div key={i} className="text-[8px] text-muted-foreground w-3 h-3 flex items-center justify-center">{l}</div>
+              ))}
+            </div>
+            {Array.from({ length: 7 }).map((_, weekIdx) => (
+              <div key={weekIdx} className="flex flex-col gap-[3px]">
+                {Array.from({ length: 7 }).map((_, dayIdx) => {
+                  const idx = weekIdx * 7 + dayIdx;
+                  const cell = weekly_heatmap[idx];
+                  if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
+                  const intensity = cell.count > 0 ? Math.max(0.15, cell.count / maxCount) : 0;
+                  return (
+                    <div
+                      key={dayIdx}
+                      className="w-3 h-3 rounded-[2px] group relative"
+                      style={{
+                        background: cell.count > 0
+                          ? `hsl(var(--primary) / ${intensity})`
+                          : "hsl(var(--muted))",
+                      }}
+                      data-testid={`heatmap-${cell.date}`}
+                    >
+                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-card border border-border px-1.5 py-0.5 rounded text-[8px] font-mono opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-sm">
+                        {cell.date.slice(5)}: {cell.count}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 mt-2 justify-end">
+            <span className="text-[8px] text-muted-foreground">Less</span>
+            {[0, 0.15, 0.35, 0.6, 1].map((op, i) => (
+              <div key={i} className="w-2.5 h-2.5 rounded-[2px]" style={{ background: op === 0 ? "hsl(var(--muted))" : `hsl(var(--primary) / ${op})` }} />
+            ))}
+            <span className="text-[8px] text-muted-foreground">More</span>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export default function AnalyticsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     axios.get(`${API}/analytics`)
@@ -245,6 +325,24 @@ export default function AnalyticsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await axios.get(`${API}/analytics/export`);
+      const blob = new Blob([res.data.report], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `StudyForge_Report_${new Date().toISOString().slice(0, 10)}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silent
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const t = data?.totals || {};
 
@@ -255,13 +353,28 @@ export default function AnalyticsPage() {
         <div className="max-w-5xl mx-auto py-8 px-4 md:px-6">
           <motion.div initial="hidden" animate="visible" variants={stagger}>
             <motion.div variants={fadeUp} className="mb-8">
-              <div className="flex items-center gap-3 mb-1">
-                <ChartBar weight="duotone" className="w-5 h-5 text-[hsl(var(--primary))]" />
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
-                  Study <span className="gradient-text">Analytics</span>
-                </h1>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <ChartBar weight="duotone" className="w-5 h-5 text-[hsl(var(--primary))]" />
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+                      Study <span className="gradient-text">Analytics</span>
+                    </h1>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Track your study progress and activity.</p>
+                </div>
+                {!loading && (
+                  <button
+                    data-testid="export-report-btn"
+                    onClick={handleExport}
+                    disabled={exporting}
+                    className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg border border-border hover:border-[hsl(var(--primary)/0.3)] hover:bg-[hsl(var(--primary)/0.04)] transition-all text-muted-foreground hover:text-foreground"
+                  >
+                    <DownloadSimple weight="bold" className="w-3.5 h-3.5" />
+                    {exporting ? "Exporting..." : "Export Report"}
+                  </button>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">Track your study progress and activity.</p>
             </motion.div>
 
             {loading ? (
@@ -281,6 +394,11 @@ export default function AnalyticsPage() {
                   <StatCard icon={CalendarDots} label="Study Plans" value={(t.plans || 0) + (t.exam_plans || 0)} accent="accent" sub={t.exam_plans ? `${t.exam_plans} exam plans` : undefined} />
                   <StatCard icon={Exam} label="Quizzes Taken" value={t.quizzes || 0} accent="primary" />
                   <StatCard icon={Brain} label="Questions Practiced" value={t.total_questions || 0} accent="accent" />
+                </div>
+
+                {/* Streak section */}
+                <div className="mb-6">
+                  <StreakSection streaks={data?.streaks} />
                 </div>
 
                 {/* Charts row */}

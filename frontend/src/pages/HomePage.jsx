@@ -1,7 +1,11 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import Header from "../components/Header";
 import { motion } from "framer-motion";
-import { NotePencil, CalendarDots, Exam, Clock, Lightning, Brain, RocketLaunch, ArrowRight, Sparkle } from "@phosphor-icons/react";
+import { NotePencil, CalendarDots, Exam, Clock, Lightning, Brain, RocketLaunch, ArrowRight, Sparkle, Fire } from "@phosphor-icons/react";
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const FEATURES = [
   {
@@ -67,6 +71,13 @@ const fadeUp = {
 
 function HeroSection() {
   const navigate = useNavigate();
+  const [streak, setStreak] = useState(null);
+
+  useEffect(() => {
+    axios.get(`${API}/analytics`)
+      .then((res) => setStreak(res.data?.streaks))
+      .catch(() => {});
+  }, []);
 
   return (
     <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 px-4" data-testid="hero-section">
@@ -83,11 +94,21 @@ function HeroSection() {
         animate="visible"
         variants={stagger}
       >
-        <motion.div variants={fadeUp} className="mb-6">
+        <motion.div variants={fadeUp} className="mb-6 flex items-center justify-center gap-3">
           <span className="overline text-[hsl(var(--primary))] inline-flex items-center gap-2">
             <Lightning weight="fill" className="w-3.5 h-3.5" />
             AI-Powered Study Assistant
           </span>
+          {streak && streak.current_streak > 0 && (
+            <span
+              data-testid="hero-streak-badge"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold"
+              style={{ background: "hsl(25, 95%, 53%, 0.1)", color: "hsl(25, 95%, 53%)" }}
+            >
+              <Fire weight="fill" className="w-3 h-3" />
+              {streak.current_streak} day streak
+            </span>
+          )}
         </motion.div>
 
         <motion.h1

@@ -1054,7 +1054,152 @@ async def get_analytics():
             "subject_accuracy": subject_accuracy,
             "score_trend": score_trend,
         },
+        "streaks": await compute_streaks(),
     }
+
+async def compute_streaks():
+    all_dates = set()
+    for coll_name in ["study_notes", "study_plans", "exam_plans", "practice_tests", "quiz_scores"]:
+        cursor = db[coll_name].find({}, {"_id": 0, "created_at": 1})
+        docs = await cursor.to_list(2000)
+        for d in docs:
+            ca = d.get("created_at", "")
+            if ca:
+                all_dates.add(ca[:10])
+
+    if not all_dates:
+        return {"current_streak": 0, "longest_streak": 0, "total_active_days": 0, "weekly_heatmap": []}
+
+    sorted_dates = sorted(all_dates)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # Current streak (counting back from today or yesterday)
+    current_streak = 0
+    check_date = datetime.now(timezone.utc).date()
+    if today not in all_dates and yesterday not in all_dates:
+        current_streak = 0
+    else:
+        while True:
+            ds = check_date.strftime("%Y-%m-%d")
+            if ds in all_dates:
+                current_streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
+
+    # Longest streak
+    longest = 0
+    streak = 0
+    prev = None
+    for ds in sorted_dates:
+        d = datetime.strptime(ds, "%Y-%m-%d").date()
+        if prev and (d - prev).days == 1:
+            streak += 1
+        else:
+            streak = 1
+        longest = max(longest, streak)
+        prev = d
+
+    # Weekly heatmap (last 7 weeks = 49 days)
+    heatmap = []
+    base = datetime.now(timezone.utc).date()
+    # Count activity per day for heatmap
+    activity_counts = {}
+    for coll_name in ["study_notes", "study_plans", "exam_plans", "practice_tests"]:
+        cutoff = (base - timedelta(days=48)).isoformat()
+        cursor = db[coll_name].find({"created_at": {"$gte": cutoff}}, {"_id": 0, "created_at": 1})
+        docs = await cursor.to_list(500)
+        for d in docs:
+            day = d["created_at"][:10]
+            activity_counts[day] = activity_counts.get(day, 0) + 1
+
+    for i in range(48, -1, -1):
+        d = base - timedelta(days=i)
+        ds = d.strftime("%Y-%m-%d")
+        heatmap.append({
+            "date": ds,
+            "weekday": d.weekday(),
+            "count": activity_counts.get(ds, 0),
+        })
+
+    return {
+        "current_streak": current_streak,
+        "longest_streak": longest,
+        "total_active_days": len(all_dates),
+        "weekly_heatmap": heatmap,
+    }
+
+@api_router.get("/analytics/export")
+async def export_analytics_report():
+    """Generate a text-based analytics report."""
+    # Reuse analytics data
+    notes_count = await db.study_notes.count_documents({})
+    plans_count = await db.study_plans.count_documents({})
+    exam_plans_count = await db.exam_plans.count_documents({})
+    practice_count = await db.practice_tests.count_documents({})
+
+    tests_cursor = db.practice_tests.find({}, {"_id": 0, "num_questions": 1})
+    tests_list = await tests_cursor.to_list(500)
+    total_questions = sum(t.get("num_questions", 0) for t in tests_list)
+
+    scores_cursor = db.quiz_scores.find({}, {"_id": 0, "subject": 1, "score_pct": 1, "correct": 1, "total_gradable": 1})
+    scores_list = await scores_cursor.to_list(500)
+    avg_acc = round(sum(s["score_pct"] for s in scores_list) / len(scores_list), 1) if scores_list else 0
+
+    streaks = await compute_streaks()
+
+    # Subject breakdown
+    notes_cursor = db.study_notes.find({}, {"_id": 0, "subject": 1})
+    notes_list = await notes_cursor.to_list(500)
+    subject_counts = {}
+    for n in notes_list:
+        subj = n.get("subject", "Unknown")
+        subject_counts[subj] = subject_counts.get(subj, 0) + 1
+
+    # Build report
+    now = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
+    report = f"STUDYFORGE ANALYTICS REPORT\n{'=' * 50}\nGenerated: {now}\n{'=' * 50}\n\n"
+
+    report += "OVERVIEW\n" + "-" * 30 + "\n"
+    report += f"  Notes Generated:     {notes_count}\n"
+    report += f"  Study Plans:         {plans_count}\n"
+    report += f"  Exam Plans:          {exam_plans_count}\n"
+    report += f"  Practice Quizzes:    {practice_count}\n"
+    report += f"  Total Questions:     {total_questions}\n\n"
+
+    report += "STUDY STREAKS\n" + "-" * 30 + "\n"
+    report += f"  Current Streak:      {streaks['current_streak']} day(s)\n"
+    report += f"  Longest Streak:      {streaks['longest_streak']} day(s)\n"
+    report += f"  Total Active Days:   {streaks['total_active_days']}\n\n"
+
+    if scores_list:
+        report += "QUIZ PERFORMANCE\n" + "-" * 30 + "\n"
+        report += f"  Average Accuracy:    {avg_acc}%\n"
+        report += f"  Total Attempts:      {len(scores_list)}\n"
+        subj_scores = {}
+        for s in scores_list:
+            subj = s.get("subject", "Unknown")
+            if subj not in subj_scores:
+                subj_scores[subj] = {"total": 0, "correct": 0, "count": 0}
+            subj_scores[subj]["total"] += s.get("total_gradable", 0)
+            subj_scores[subj]["correct"] += s.get("correct", 0)
+            subj_scores[subj]["count"] += 1
+        report += "\n  By Subject:\n"
+        for subj, v in sorted(subj_scores.items(), key=lambda x: -(x[1]["correct"] / max(x[1]["total"], 1))):
+            pct = round((v["correct"] / max(v["total"], 1)) * 100, 1)
+            report += f"    {subj}: {pct}% ({v['correct']}/{v['total']}) - {v['count']} quiz(zes)\n"
+        report += "\n"
+
+    if subject_counts:
+        report += "TOP SUBJECTS\n" + "-" * 30 + "\n"
+        for subj, count in sorted(subject_counts.items(), key=lambda x: -x[1])[:10]:
+            report += f"  {subj}: {count} note(s)\n"
+        report += "\n"
+
+    report += "-" * 50 + "\nStudyForge - AI-powered study tools\n"
+
+    return {"report": report}
 
 # Include router and middleware
 app.include_router(api_router)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -34,7 +34,6 @@ import {
 } from "../components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },
@@ -373,8 +372,8 @@ export default function PlannerPage() {
     async function loadPlans() {
       try {
         const [regRes, examRes] = await Promise.all([
-          axios.get(`${API}/planners`),
-          axios.get(`${API}/exam-planners`),
+          api.get("/planners"),
+          api.get("/exam-planners"),
         ]);
         setPlans(regRes.data);
         setExamPlans(examRes.data);
@@ -388,7 +387,7 @@ export default function PlannerPage() {
   const handleGenerate = async (topic, hoursPerDay, numDays) => {
     setIsLoading(true);
     try {
-      const res = await axios.post(`${API}/planner/generate`, {
+      const res = await api.post("/planner/generate", {
         topic,
         hours_per_day: hoursPerDay,
         num_days: numDays,
@@ -415,7 +414,7 @@ export default function PlannerPage() {
   const handleExamGenerate = async (subject, topics, examDate, hoursPerDay) => {
     setIsLoading(true);
     try {
-      const res = await axios.post(`${API}/planner/exam/generate`, {
+      const res = await api.post("/planner/exam/generate", {
         subject,
         topics,
         exam_date: examDate,
@@ -445,11 +444,11 @@ export default function PlannerPage() {
   const handleDelete = async (id, isExam) => {
     try {
       if (isExam) {
-        await axios.delete(`${API}/exam-planners/${id}`);
+        await api.delete(`/exam-planners/${id}`);
         setExamPlans((prev) => prev.filter((p) => p.id !== id));
         if (activeExamPlan?.id === id) setActiveExamPlan(null);
       } else {
-        await axios.delete(`${API}/planners/${id}`);
+        await api.delete(`/planners/${id}`);
         setPlans((prev) => prev.filter((p) => p.id !== id));
         if (activePlan?.id === id) setActivePlan(null);
       }

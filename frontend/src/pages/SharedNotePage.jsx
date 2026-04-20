@@ -14,7 +14,7 @@ export default function SharedNotePage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    axios.get(`${API}/shared/${shareId}`)
+    axios.get(`${API}/shared/${shareId}`, { withCredentials: true })
       .then((res) => setNote(res.data))
       .catch(() => setError(true))
       .finally(() => setLoading(false));

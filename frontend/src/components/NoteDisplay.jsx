@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -33,7 +33,6 @@ import {
 import { exportAsText, exportAsPDF } from "../lib/exportUtils";
 import FlashcardViewer from "./FlashcardViewer";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },
@@ -83,7 +82,7 @@ function TagEditor({ tags, noteId, onUpdate }) {
 
   const saveTag = async (newTags) => {
     try {
-      await axios.put(`${API}/notes/${noteId}`, { tags: newTags });
+      await api.put(`/notes/${noteId}`, { tags: newTags });
       onUpdate?.(newTags);
     } catch {
       toast.error("Failed to update tags");
@@ -176,7 +175,7 @@ function NoteTitle({ subject, chapter, note, onNoteUpdate }) {
 
   const handleEdit = async (field, value) => {
     try {
-      const res = await axios.put(`${API}/notes/${note.id}`, { [field]: value });
+      const res = await api.put(`/notes/${note.id}`, { [field]: value });
       onNoteUpdate?.(res.data);
       toast.success("Note updated");
     } catch {
@@ -186,7 +185,7 @@ function NoteTitle({ subject, chapter, note, onNoteUpdate }) {
 
   const handleShare = async () => {
     try {
-      const res = await axios.post(`${API}/notes/${note.id}/share`);
+      const res = await api.post(`/notes/${note.id}/share`);
       const url = `${window.location.origin}/shared/${res.data.share_id}`;
       try {
         await navigator.clipboard.writeText(url);
@@ -213,7 +212,7 @@ function NoteTitle({ subject, chapter, note, onNoteUpdate }) {
     }
     setLoadingFlash(true);
     try {
-      const res = await axios.post(`${API}/notes/${note.id}/flashcards`);
+      const res = await api.post(`/notes/${note.id}/flashcards`);
       setFlashcards(res.data);
       setShowFlashcards(true);
     } catch {

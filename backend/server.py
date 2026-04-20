@@ -1,16 +1,23 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import json
+import secrets
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
+import bcrypt
+import jwt as pyjwt
 from datetime import datetime, timezone, timedelta
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from bson import ObjectId
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -23,12 +30,65 @@ db = client[os.environ['DB_NAME']]
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return Response(content=json.dumps({"detail": "Rate limit exceeded. Please wait before trying again."}), status_code=429, media_type="application/json")
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# --- Auth Helpers ---
+
+JWT_ALGORITHM = "HS256"
+
+def get_jwt_secret():
+    return os.environ["JWT_SECRET"]
+
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+
+def create_access_token(user_id: str, email: str) -> str:
+    payload = {"sub": user_id, "email": email, "exp": datetime.now(timezone.utc) + timedelta(hours=24), "type": "access"}
+    return pyjwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
+
+def create_refresh_token(user_id: str) -> str:
+    payload = {"sub": user_id, "exp": datetime.now(timezone.utc) + timedelta(days=7), "type": "refresh"}
+    return pyjwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
+
+async def get_current_user(request: Request) -> dict:
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = pyjwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        user["_id"] = str(user["_id"])
+        user.pop("password_hash", None)
+        return user
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 # --- Models ---
 
@@ -178,6 +238,55 @@ class ExamPlanRequest(BaseModel):
     topics: List[str]
     exam_date: str
     hours_per_day: float
+
+# --- Auth Models ---
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str = ""
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+# --- Goals Models ---
+
+class StudyGoal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    target: int = 100
+    current: int = 0
+    type: str = "pages"
+    user_id: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class GoalRequest(BaseModel):
+    title: str
+    target: int = 100
+    type: str = "pages"
+
+class GoalUpdateRequest(BaseModel):
+    current: Optional[int] = None
+    title: Optional[str] = None
+    target: Optional[int] = None
+
+# --- Pomodoro Models ---
+
+class PomodoroSession(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    subject: str
+    topic: str = ""
+    duration_minutes: int = 25
+    user_id: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class PomodoroRequest(BaseModel):
+    subject: str
+    topic: str = ""
+    duration_minutes: int = 25
 
 # --- AI Generation ---
 
@@ -590,7 +699,8 @@ async def root():
     return {"message": "Study Notes Generator API"}
 
 @api_router.post("/notes/generate", response_model=StudyNote)
-async def generate_notes(req: GenerateRequest):
+@limiter.limit("10/minute")
+async def generate_notes(req: GenerateRequest, request: Request):
     valid_note_types = ["quick_revision", "detailed", "exam_focused"]
     note_type = req.note_type if req.note_type in valid_note_types else "detailed"
 
@@ -807,7 +917,8 @@ async def delete_exam_planner(plan_id: str):
 # --- Practice Routes ---
 
 @api_router.post("/practice/generate", response_model=PracticeTest)
-async def generate_practice(req: PracticeRequest):
+@limiter.limit("10/minute")
+async def generate_practice(req: PracticeRequest, request: Request):
     valid_types = ["mixed", "mcq", "true_false", "numerical", "short_answer", "long_answer"]
     q_type = req.question_type if req.question_type in valid_types else "mixed"
     diff = req.difficulty if req.difficulty in ("easy", "medium", "hard", "mixed") else "mixed"
@@ -1265,13 +1376,232 @@ async def get_study_recommendations():
         logger.error(f"Recommendations error: {e}")
         return {"recommendations": []}
 
+# --- Auth Routes ---
+
+@api_router.post("/auth/register")
+async def register(req: RegisterRequest, response: Response):
+    email = req.email.strip().lower()
+    if not email or not req.password:
+        raise HTTPException(status_code=400, detail="Email and password required")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    hashed = hash_password(req.password)
+    user_doc = {"email": email, "password_hash": hashed, "name": req.name or email.split("@")[0], "role": "user", "created_at": datetime.now(timezone.utc).isoformat()}
+    result = await db.users.insert_one(user_doc)
+    user_id = str(result.inserted_id)
+    access = create_access_token(user_id, email)
+    refresh = create_refresh_token(user_id)
+    response.set_cookie(key="access_token", value=access, httponly=True, secure=False, samesite="lax", max_age=86400, path="/")
+    response.set_cookie(key="refresh_token", value=refresh, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    return {"id": user_id, "email": email, "name": user_doc["name"], "role": "user"}
+
+@api_router.post("/auth/login")
+async def login(req: LoginRequest, request: Request, response: Response):
+    email = req.email.strip().lower()
+    ip = get_remote_address(request)
+    identifier = f"{ip}:{email}"
+    # Brute force check
+    attempt = await db.login_attempts.find_one({"identifier": identifier})
+    if attempt and attempt.get("count", 0) >= 5:
+        lockout_until = attempt.get("locked_until")
+        if lockout_until and datetime.now(timezone.utc).isoformat() < lockout_until:
+            raise HTTPException(status_code=429, detail="Too many failed attempts. Try again in 15 minutes.")
+        else:
+            await db.login_attempts.delete_one({"identifier": identifier})
+    user = await db.users.find_one({"email": email})
+    if not user or not verify_password(req.password, user["password_hash"]):
+        # Increment failed attempts
+        await db.login_attempts.update_one(
+            {"identifier": identifier},
+            {"$inc": {"count": 1}, "$set": {"locked_until": (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()}},
+            upsert=True
+        )
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    # Clear attempts on success
+    await db.login_attempts.delete_one({"identifier": identifier})
+    user_id = str(user["_id"])
+    access = create_access_token(user_id, email)
+    refresh = create_refresh_token(user_id)
+    response.set_cookie(key="access_token", value=access, httponly=True, secure=False, samesite="lax", max_age=86400, path="/")
+    response.set_cookie(key="refresh_token", value=refresh, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    return {"id": user_id, "email": email, "name": user.get("name", ""), "role": user.get("role", "user")}
+
+@api_router.post("/auth/logout")
+async def logout(response: Response):
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/")
+    return {"message": "Logged out"}
+
+@api_router.get("/auth/me")
+async def get_me(request: Request):
+    user = await get_current_user(request)
+    return {"id": user["_id"], "email": user["email"], "name": user.get("name", ""), "role": user.get("role", "user")}
+
+@api_router.post("/auth/refresh")
+async def refresh_token(request: Request, response: Response):
+    token = request.cookies.get("refresh_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="No refresh token")
+    try:
+        payload = pyjwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        user_id = str(user["_id"])
+        access = create_access_token(user_id, user["email"])
+        response.set_cookie(key="access_token", value=access, httponly=True, secure=False, samesite="lax", max_age=86400, path="/")
+        return {"message": "Token refreshed"}
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+# --- Goals Routes ---
+
+@api_router.get("/goals")
+async def get_goals(request: Request):
+    user = await get_current_user(request)
+    goals = await db.goals.find({"user_id": user["_id"]}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return goals
+
+@api_router.post("/goals")
+async def create_goal(req: GoalRequest, request: Request):
+    user = await get_current_user(request)
+    goal = StudyGoal(title=req.title, target=req.target, type=req.type, user_id=user["_id"])
+    doc = goal.model_dump()
+    await db.goals.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.put("/goals/{goal_id}")
+async def update_goal(goal_id: str, req: GoalUpdateRequest, request: Request):
+    user = await get_current_user(request)
+    update = {}
+    if req.current is not None:
+        update["current"] = req.current
+    if req.title is not None:
+        update["title"] = req.title
+    if req.target is not None:
+        update["target"] = req.target
+    if not update:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    result = await db.goals.update_one({"id": goal_id, "user_id": user["_id"]}, {"$set": update})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    updated = await db.goals.find_one({"id": goal_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/goals/{goal_id}")
+async def delete_goal(goal_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.goals.delete_one({"id": goal_id, "user_id": user["_id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    return {"message": "Goal deleted"}
+
+# --- Pomodoro Routes ---
+
+@api_router.get("/pomodoro")
+async def get_pomodoro_sessions(request: Request):
+    user = await get_current_user(request)
+    sessions = await db.pomodoro_sessions.find({"user_id": user["_id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return sessions
+
+@api_router.post("/pomodoro")
+async def log_pomodoro(req: PomodoroRequest, request: Request):
+    user = await get_current_user(request)
+    session = PomodoroSession(subject=req.subject, topic=req.topic, duration_minutes=req.duration_minutes, user_id=user["_id"])
+    doc = session.model_dump()
+    await db.pomodoro_sessions.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+# --- Bookmark & Confidence Routes ---
+
+@api_router.post("/bookmarks/{item_id}")
+async def toggle_bookmark(item_id: str, request: Request):
+    user = await get_current_user(request)
+    # Check notes and practice tests
+    for coll_name in ["study_notes", "practice_tests"]:
+        doc = await db[coll_name].find_one({"id": item_id})
+        if doc:
+            current = doc.get("bookmarked", False)
+            await db[coll_name].update_one({"id": item_id}, {"$set": {"bookmarked": not current}})
+            return {"bookmarked": not current}
+    raise HTTPException(status_code=404, detail="Item not found")
+
+@api_router.post("/confidence/{item_id}")
+async def set_confidence(item_id: str, request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    level = body.get("level", "medium")
+    if level not in ("low", "medium", "high"):
+        raise HTTPException(status_code=400, detail="Level must be low, medium, or high")
+    for coll_name in ["study_notes", "practice_tests"]:
+        doc = await db[coll_name].find_one({"id": item_id})
+        if doc:
+            await db[coll_name].update_one({"id": item_id}, {"$set": {"confidence": level}})
+            return {"confidence": level}
+    raise HTTPException(status_code=404, detail="Item not found")
+
+@api_router.get("/bookmarks")
+async def get_bookmarked_items(request: Request):
+    user = await get_current_user(request)
+    items = []
+    notes = await db.study_notes.find({"bookmarked": True}, {"_id": 0}).to_list(100)
+    for n in notes:
+        items.append({"type": "note", "id": n["id"], "title": n["chapter"], "subject": n["subject"]})
+    tests = await db.practice_tests.find({"bookmarked": True}, {"_id": 0}).to_list(100)
+    for t in tests:
+        items.append({"type": "practice", "id": t["id"], "title": t["chapter"], "subject": t["subject"]})
+    return items
+
+# --- Bulk Delete Route ---
+
+@api_router.post("/notes/bulk-delete")
+async def bulk_delete_notes(request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    ids = body.get("ids", [])
+    if not ids:
+        raise HTTPException(status_code=400, detail="No IDs provided")
+    result = await db.study_notes.delete_many({"id": {"$in": ids}})
+    return {"deleted": result.deleted_count}
+
+# --- Admin Seeding ---
+
+@app.on_event("startup")
+async def startup():
+    await db.users.create_index("email", unique=True)
+    # Seed admin
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@studyforge.com")
+    admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    existing = await db.users.find_one({"email": admin_email})
+    if not existing:
+        hashed = hash_password(admin_password)
+        await db.users.insert_one({"email": admin_email, "password_hash": hashed, "name": "Admin", "role": "admin", "created_at": datetime.now(timezone.utc).isoformat()})
+        logger.info(f"Admin user seeded: {admin_email}")
+    elif not verify_password(admin_password, existing["password_hash"]):
+        await db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password)}})
+        logger.info("Admin password updated")
+    # Migrate existing data to admin user
+    admin_user = await db.users.find_one({"email": admin_email})
+    if admin_user:
+        admin_id = str(admin_user["_id"])
+        for coll in ["study_notes", "study_plans", "exam_plans", "practice_tests", "quiz_scores"]:
+            await db[coll].update_many({"user_id": {"$exists": False}}, {"$set": {"user_id": admin_id}})
+            await db[coll].update_many({"user_id": ""}, {"$set": {"user_id": admin_id}})
+
 # Include router and middleware
 app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=[os.environ.get('REACT_APP_BACKEND_URL', 'https://learn-guide-13.preview.emergentagent.com'), "http://localhost:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

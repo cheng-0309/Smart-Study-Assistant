@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { toast } from "sonner";
 import Header from "../components/Header";
 import NoteForm from "../components/NoteForm";
@@ -9,7 +9,6 @@ import EmptyState from "../components/EmptyState";
 import { AnimatePresence, motion } from "framer-motion";
 import { sendToWebhook } from "../lib/webhook";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const SKELETON_SPANS = [
   { span: 8, id: "hero-1" },
@@ -69,7 +68,7 @@ export default function NotesPage() {
   useEffect(() => {
     async function loadNotes() {
       try {
-        const res = await axios.get(`${API}/notes`);
+        const res = await api.get("/notes");
         setNotes(res.data);
       } catch {
         /* silent on initial load */
@@ -81,7 +80,7 @@ export default function NotesPage() {
   const handleGenerate = async (subject, chapter, noteType) => {
     setIsLoading(true);
     try {
-      const res = await axios.post(`${API}/notes/generate`, {
+      const res = await api.post("/notes/generate", {
         subject,
         chapter,
         note_type: noteType,
@@ -106,7 +105,7 @@ export default function NotesPage() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API}/notes/${id}`);
+      await api.delete(`/notes/${id}`);
       setNotes((prev) => prev.filter((n) => n.id !== id));
       if (activeNote?.id === id) setActiveNote(null);
       toast.success("Note deleted");
@@ -122,7 +121,7 @@ export default function NotesPage() {
 
   const handleBulkDelete = async (ids) => {
     try {
-      await Promise.all(ids.map((id) => axios.delete(`${API}/notes/${id}`)));
+      await Promise.all(ids.map((id) => api.delete(`/notes/${id}`)));
       setNotes((prev) => prev.filter((n) => !ids.includes(n.id)));
       if (activeNote && ids.includes(activeNote.id)) setActiveNote(null);
       toast.success(`${ids.length} note(s) deleted`);
@@ -137,7 +136,7 @@ export default function NotesPage() {
         const note = notes.find((n) => n.id === id);
         const existingTags = note?.tags || [];
         if (!existingTags.includes(tag)) {
-          await axios.put(`${API}/notes/${id}`, { tags: [...existingTags, tag] });
+          await api.put(`/notes/${id}`, { tags: [...existingTags, tag] });
         }
       }));
       setNotes((prev) => prev.map((n) => {

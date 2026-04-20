@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 import Header from "../components/Header";
 import { motion } from "framer-motion";
 import { NotePencil, CalendarDots, Exam, Clock, Lightning, Brain, RocketLaunch, ArrowRight, Sparkle, Fire } from "@phosphor-icons/react";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const FEATURES = [
   {
@@ -74,7 +73,7 @@ function HeroSection() {
   const [streak, setStreak] = useState(null);
 
   useEffect(() => {
-    axios.get(`${API}/analytics`)
+    api.get("/analytics")
       .then((res) => setStreak(res.data?.streaks))
       .catch(() => {});
   }, []);

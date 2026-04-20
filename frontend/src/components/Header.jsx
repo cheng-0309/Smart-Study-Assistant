@@ -1,5 +1,6 @@
-import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock, ChartBar } from "@phosphor-icons/react";
+import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock, ChartBar, Target, Timer, SignOut } from "@phosphor-icons/react";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,6 +15,8 @@ const NAV_ITEMS = [
   { path: "/notes", label: "Notes", icon: NotePencil },
   { path: "/planner", label: "Planner", icon: CalendarDots },
   { path: "/practice", label: "Practice", icon: Exam },
+  { path: "/goals", label: "Goals", icon: Target },
+  { path: "/pomodoro", label: "Timer", icon: Timer },
   { path: "/history", label: "History", icon: Clock },
   { path: "/analytics", label: "Analytics", icon: ChartBar },
 ];
@@ -39,7 +42,7 @@ function NavBar() {
 
   return (
     <motion.nav
-      className="flex items-center gap-1"
+      className="flex items-center gap-0.5"
       data-testid="main-nav"
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -52,21 +55,21 @@ function NavBar() {
             key={path}
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: i * 0.05, ease: "easeOut" }}
+            transition={{ duration: 0.3, delay: i * 0.04, ease: "easeOut" }}
           >
             <Button
               data-testid={`nav-${label.toLowerCase()}`}
               variant="ghost"
               size="sm"
               onClick={() => navigate(path)}
-              className={`rounded-lg h-9 gap-1.5 text-sm font-medium transition-all ${
+              className={`rounded-lg h-8 gap-1 text-xs font-medium transition-all px-2.5 ${
                 isActive
                   ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] nav-active-indicator"
                   : "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--primary)/0.05)]"
               }`}
             >
-              <Icon weight={isActive ? "bold" : "regular"} className="w-4 h-4" />
-              <span className="hidden sm:inline">{label}</span>
+              <Icon weight={isActive ? "bold" : "regular"} className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">{label}</span>
             </Button>
           </motion.div>
         );
@@ -77,15 +80,17 @@ function NavBar() {
 
 function HeaderActions({ onToggleSidebar, sidebarOpen }) {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1">
       <TooltipProvider delayDuration={200}>
         {onToggleSidebar && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button data-testid="toggle-sidebar-btn" variant="ghost" size="icon" onClick={onToggleSidebar} className="rounded-lg h-9 w-9 hover:bg-[hsl(var(--primary)/0.05)]">
-                <ClockCounterClockwise className="w-[18px] h-[18px]" />
+              <Button data-testid="toggle-sidebar-btn" variant="ghost" size="icon" onClick={onToggleSidebar} className="rounded-lg h-8 w-8 hover:bg-[hsl(var(--primary)/0.05)]">
+                <ClockCounterClockwise className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">{sidebarOpen ? "Hide" : "Show"} History</TooltipContent>
@@ -93,22 +98,22 @@ function HeaderActions({ onToggleSidebar, sidebarOpen }) {
         )}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              data-testid="theme-toggle"
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-lg h-9 w-9 hover:bg-[hsl(var(--primary)/0.05)]"
-            >
-              {theme === "dark" ? (
-                <Sun className="w-[18px] h-[18px] text-amber-400" />
-              ) : (
-                <Moon className="w-[18px] h-[18px] text-[hsl(var(--accent))]" />
-              )}
+            <Button data-testid="theme-toggle" variant="ghost" size="icon" onClick={toggleTheme} className="rounded-lg h-8 w-8 hover:bg-[hsl(var(--primary)/0.05)]">
+              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-[hsl(var(--accent))]" />}
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Switch to {theme === "dark" ? "Light" : "Dark"} mode</TooltipContent>
         </Tooltip>
+        {user && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button data-testid="logout-btn" variant="ghost" size="icon" onClick={() => { logout(); navigate("/login"); }} className="rounded-lg h-8 w-8 hover:bg-[hsl(var(--primary)/0.05)]">
+                <SignOut className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Logout</TooltipContent>
+          </Tooltip>
+        )}
       </TooltipProvider>
     </div>
   );
@@ -123,7 +128,7 @@ export default function Header({ onToggleSidebar, sidebarOpen }) {
       data-testid="app-header"
       className="sticky top-0 z-50 glass-header"
     >
-      <div className="max-w-[1440px] mx-auto flex items-center justify-between px-6 h-14">
+      <div className="max-w-[1440px] mx-auto flex items-center justify-between px-4 md:px-6 h-14">
         <Logo />
         <AnimatePresence>
           {!isLanding && <NavBar />}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -36,7 +36,6 @@ import {
   TooltipTrigger,
 } from "../components/ui/tooltip";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const TYPE_CONFIG = {
   note: { label: "Notes", icon: NotePencil, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },
@@ -566,8 +565,8 @@ export default function HistoryPage() {
     async function loadHistory() {
       setIsLoading(true);
       try {
-        const url = filter ? `${API}/history?item_type=${filter}` : `${API}/history`;
-        const res = await axios.get(url);
+        const url = filter ? `/history?item_type=${filter}` : `/history`;
+        const res = await api.get(url);
         setItems(res.data);
       } catch {
         toast.error("Failed to load history");
@@ -580,7 +579,7 @@ export default function HistoryPage() {
 
   const handleDelete = async (type, id) => {
     try {
-      await axios.delete(`${API}/history/${type}/${id}`);
+      await api.delete(`/history/${type}/${id}`);
       setItems((prev) => prev.filter((it) => it.id !== id));
       toast.success("Item deleted");
     } catch {

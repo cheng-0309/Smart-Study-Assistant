@@ -48,6 +48,13 @@ const QUESTION_TYPES = [
   { value: "long_answer", label: "Long Answer" },
 ];
 
+const DIFFICULTY_LEVELS = [
+  { value: "mixed", label: "Mixed" },
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+];
+
 const TYPE_LABELS = {
   mixed: "Mixed",
   mcq: "MCQ",
@@ -75,6 +82,7 @@ function PracticeForm({ onGenerate, isLoading }) {
   const [chapter, setChapter] = useState("");
   const [numQuestions, setNumQuestions] = useState("5");
   const [questionType, setQuestionType] = useState("mixed");
+  const [difficulty, setDifficulty] = useState("mixed");
   const [error, setError] = useState("");
 
   const clearError = () => { if (error) setError(""); };
@@ -94,7 +102,7 @@ function PracticeForm({ onGenerate, isLoading }) {
       return;
     }
     setError("");
-    onGenerate(subject.trim(), chapter.trim(), parseInt(numQuestions), questionType);
+    onGenerate(subject.trim(), chapter.trim(), parseInt(numQuestions), questionType, difficulty);
   };
 
   return (
@@ -142,7 +150,7 @@ function PracticeForm({ onGenerate, isLoading }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="space-y-2">
           <Label className="text-sm font-medium">Question Type</Label>
           <Select value={questionType} onValueChange={setQuestionType} disabled={isLoading}>
@@ -153,6 +161,21 @@ function PracticeForm({ onGenerate, isLoading }) {
               {QUESTION_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>
                   {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Difficulty</Label>
+          <Select value={difficulty} onValueChange={setDifficulty} disabled={isLoading}>
+            <SelectTrigger data-testid="practice-difficulty-select" className="rounded-lg h-11 bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg">
+              {DIFFICULTY_LEVELS.map((d) => (
+                <SelectItem key={d.value} value={d.value}>
+                  {d.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -212,6 +235,20 @@ function QTypeBadge({ type }) {
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-muted text-muted-foreground">
       <Icon weight="bold" className="w-3 h-3" />
       {label}
+    </span>
+  );
+}
+
+function DifficultyBadge({ difficulty }) {
+  const styles = {
+    easy: "bg-green-500/10 text-green-600 dark:text-green-400",
+    medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    hard: "bg-red-500/10 text-red-600 dark:text-red-400",
+  };
+  const cls = styles[difficulty] || styles.medium;
+  return (
+    <span data-testid={`difficulty-badge-${difficulty}`} className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider ${cls}`}>
+      {difficulty || "medium"}
     </span>
   );
 }
@@ -590,6 +627,7 @@ function QuizView({ test }) {
         >
           <div className="flex items-center gap-2 mb-4">
             <QTypeBadge type={qt} />
+            <DifficultyBadge difficulty={q.difficulty} />
             {!isAutoGradable(qt) && (
               <span className="text-[10px] font-medium text-muted-foreground">Self-evaluated</span>
             )}
@@ -766,7 +804,7 @@ export default function PracticePage() {
     loadTests();
   }, []);
 
-  const handleGenerate = async (subject, chapter, numQuestions, questionType) => {
+  const handleGenerate = async (subject, chapter, numQuestions, questionType, difficulty) => {
     setIsLoading(true);
     try {
       const res = await axios.post(`${API}/practice/generate`, {
@@ -774,6 +812,7 @@ export default function PracticePage() {
         chapter,
         num_questions: numQuestions,
         question_type: questionType,
+        difficulty,
       });
       setActiveTest(res.data);
       setTests((prev) => [res.data, ...prev]);

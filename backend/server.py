@@ -150,6 +150,7 @@ class PracticeRequest(BaseModel):
     chapter: str
     num_questions: int = 5
     question_type: str = "mixed"
+    difficulty: str = "mixed"
 
 # --- Exam Planner Models ---
 
@@ -440,7 +441,13 @@ Rules:
 - Questions should test understanding, not just memorization
 - Return ONLY valid JSON, no markdown code blocks"""
 
-def build_practice_prompt(subject: str, chapter: str, num_questions: int, question_type: str) -> str:
+def build_practice_prompt(subject: str, chapter: str, num_questions: int, question_type: str, difficulty: str = "mixed") -> str:
+    diff_instruction = ""
+    if difficulty in ("easy", "medium", "hard"):
+        diff_instruction = f"\nDifficulty: ALL questions must be \"{difficulty}\" difficulty level."
+    else:
+        diff_instruction = "\nDifficulty: Vary difficulty across easy, medium, and hard."
+
     if question_type == "mixed":
         mcq_count = max(1, round(num_questions * 0.4))
         tf_count = max(1, round(num_questions * 0.2))
@@ -451,7 +458,7 @@ def build_practice_prompt(subject: str, chapter: str, num_questions: int, questi
             mcq_count = num_questions - tf_count - num_count - sa_count
         return (
             f"Generate exactly {num_questions} practice questions for:\n"
-            f"Subject: {subject}\nChapter: {chapter}\n\n"
+            f"Subject: {subject}\nChapter: {chapter}\n{diff_instruction}\n\n"
             f"Distribution:\n"
             f"- {mcq_count} MCQ questions (question_type: mcq)\n"
             f"- {tf_count} True/False questions (question_type: true_false)\n"
@@ -469,11 +476,11 @@ def build_practice_prompt(subject: str, chapter: str, num_questions: int, questi
     type_label = type_map.get(question_type, question_type)
     return (
         f"Generate exactly {num_questions} {type_label} questions for:\n"
-        f"Subject: {subject}\nChapter: {chapter}\n\n"
+        f"Subject: {subject}\nChapter: {chapter}\n{diff_instruction}\n\n"
         f"All questions must have question_type: \"{question_type}\""
     )
 
-async def generate_practice_with_ai(subject: str, chapter: str, num_questions: int, question_type: str = "mixed") -> List[BaseQuestion]:
+async def generate_practice_with_ai(subject: str, chapter: str, num_questions: int, question_type: str = "mixed", difficulty: str = "mixed") -> List[BaseQuestion]:
     api_key = os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
         raise HTTPException(status_code=500, detail="LLM API key not configured")
@@ -485,7 +492,7 @@ async def generate_practice_with_ai(subject: str, chapter: str, num_questions: i
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
     user_message = UserMessage(
-        text=build_practice_prompt(subject, chapter, num_questions, question_type)
+        text=build_practice_prompt(subject, chapter, num_questions, question_type, difficulty)
     )
 
     response = await chat.send_message(user_message)
@@ -803,7 +810,8 @@ async def delete_exam_planner(plan_id: str):
 async def generate_practice(req: PracticeRequest):
     valid_types = ["mixed", "mcq", "true_false", "numerical", "short_answer", "long_answer"]
     q_type = req.question_type if req.question_type in valid_types else "mixed"
-    questions = await generate_practice_with_ai(req.subject, req.chapter, req.num_questions, q_type)
+    diff = req.difficulty if req.difficulty in ("easy", "medium", "hard", "mixed") else "mixed"
+    questions = await generate_practice_with_ai(req.subject, req.chapter, req.num_questions, q_type, diff)
     test = PracticeTest(
         subject=req.subject,
         chapter=req.chapter,
@@ -1200,6 +1208,62 @@ async def export_analytics_report():
     report += "-" * 50 + "\nStudyForge - AI-powered study tools\n"
 
     return {"report": report}
+
+@api_router.get("/analytics/recommendations")
+async def get_study_recommendations():
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        return {"recommendations": []}
+
+    # Gather context
+    scores_cursor = db.quiz_scores.find({}, {"_id": 0, "subject": 1, "chapter": 1, "score_pct": 1, "created_at": 1})
+    scores = await scores_cursor.to_list(100)
+
+    notes_cursor = db.study_notes.find({}, {"_id": 0, "subject": 1, "chapter": 1, "created_at": 1})
+    notes = await notes_cursor.to_list(100)
+
+    streaks = await compute_streaks()
+
+    # Build context summary
+    context = f"Current streak: {streaks['current_streak']} days. Longest: {streaks['longest_streak']}. Active days: {streaks['total_active_days']}.\n"
+
+    if scores:
+        subj_scores = {}
+        for s in scores:
+            subj = s.get("subject", "Unknown")
+            if subj not in subj_scores:
+                subj_scores[subj] = []
+            subj_scores[subj].append(s["score_pct"])
+        context += "Quiz scores by subject:\n"
+        for subj, pcts in subj_scores.items():
+            avg = round(sum(pcts) / len(pcts), 1)
+            context += f"  {subj}: avg {avg}% ({len(pcts)} quizzes)\n"
+
+    if notes:
+        subj_dates = {}
+        for n in notes:
+            subj = n.get("subject", "Unknown")
+            subj_dates[subj] = n["created_at"][:10]
+        context += "Last note date by subject:\n"
+        for subj, d in sorted(subj_dates.items(), key=lambda x: x[1]):
+            context += f"  {subj}: last studied {d}\n"
+
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=str(uuid.uuid4()),
+        system_message="You are a study coach. Given study analytics, generate 3-5 concise, actionable study recommendations. Return ONLY valid JSON: {\"recommendations\": [{\"type\": \"weakness|strength|reminder|motivation\", \"title\": \"Short title\", \"message\": \"Actionable advice in 1-2 sentences\"}]}. Types: weakness=low scores, strength=high scores, reminder=not studied recently, motivation=streak/consistency."
+    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+
+    try:
+        response = await chat.send_message(UserMessage(text=f"Generate study recommendations based on this data:\n{context}"))
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0]
+        parsed = json.loads(cleaned)
+        return {"recommendations": parsed.get("recommendations", [])}
+    except Exception as e:
+        logger.error(f"Recommendations error: {e}")
+        return {"recommendations": []}
 
 # Include router and middleware
 app.include_router(api_router)

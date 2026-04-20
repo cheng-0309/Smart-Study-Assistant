@@ -120,6 +120,38 @@ export default function NotesPage() {
     setNotes((prev) => prev.map((n) => n.id === updatedNote.id ? updatedNote : n));
   };
 
+  const handleBulkDelete = async (ids) => {
+    try {
+      await Promise.all(ids.map((id) => axios.delete(`${API}/notes/${id}`)));
+      setNotes((prev) => prev.filter((n) => !ids.includes(n.id)));
+      if (activeNote && ids.includes(activeNote.id)) setActiveNote(null);
+      toast.success(`${ids.length} note(s) deleted`);
+    } catch {
+      toast.error("Failed to delete some notes");
+    }
+  };
+
+  const handleBulkTag = async (ids, tag) => {
+    try {
+      await Promise.all(ids.map(async (id) => {
+        const note = notes.find((n) => n.id === id);
+        const existingTags = note?.tags || [];
+        if (!existingTags.includes(tag)) {
+          await axios.put(`${API}/notes/${id}`, { tags: [...existingTags, tag] });
+        }
+      }));
+      setNotes((prev) => prev.map((n) => {
+        if (ids.includes(n.id) && !(n.tags || []).includes(tag)) {
+          return { ...n, tags: [...(n.tags || []), tag] };
+        }
+        return n;
+      }));
+      toast.success(`Tag "${tag}" added to ${ids.length} note(s)`);
+    } catch {
+      toast.error("Failed to tag some notes");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header
@@ -178,6 +210,8 @@ export default function NotesPage() {
                 notes={notes}
                 onSelect={setActiveNote}
                 onDelete={handleDelete}
+                onBulkDelete={handleBulkDelete}
+                onBulkTag={handleBulkTag}
                 activeId={activeNote?.id}
               />
             </motion.aside>

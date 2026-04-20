@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Header from "../components/Header";
 import { motion } from "framer-motion";
-import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning, Trophy, Target, Fire, DownloadSimple } from "@phosphor-icons/react";
+import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning, Trophy, Target, Fire, DownloadSimple, Lightbulb, ArrowRight, Warning, Sparkle, Barbell } from "@phosphor-icons/react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -318,6 +318,8 @@ export default function AnalyticsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [recs, setRecs] = useState(null);
+  const [recsLoading, setRecsLoading] = useState(false);
 
   useEffect(() => {
     axios.get(`${API}/analytics`)
@@ -325,6 +327,14 @@ export default function AnalyticsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const loadRecommendations = () => {
+    setRecsLoading(true);
+    axios.get(`${API}/analytics/recommendations`)
+      .then((res) => setRecs(res.data.recommendations))
+      .catch(() => setRecs([]))
+      .finally(() => setRecsLoading(false));
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -434,6 +444,78 @@ export default function AnalyticsPage() {
                 </div>
 
                 <ScoreTrend data={data?.quiz_scores?.score_trend} />
+
+                {/* AI Recommendations Section */}
+                <motion.div variants={fadeUp} className="mt-8 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb weight="duotone" className="w-4 h-4 text-[hsl(var(--accent))]" />
+                      <h2 className="text-lg font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+                        AI <span className="gradient-text">Recommendations</span>
+                      </h2>
+                    </div>
+                    {!recs && (
+                      <button
+                        data-testid="load-recommendations-btn"
+                        onClick={loadRecommendations}
+                        disabled={recsLoading}
+                        className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg gradient-btn text-white"
+                      >
+                        <Sparkle weight="bold" className="w-3.5 h-3.5" />
+                        {recsLoading ? "Analyzing..." : "Get Recommendations"}
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+
+                {recsLoading && (
+                  <div className="glass-card p-6 space-y-3">
+                    {[1,2,3].map((i) => (
+                      <div key={i} className="flex gap-3 animate-pulse">
+                        <div className="w-8 h-8 bg-muted rounded-lg shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 bg-muted rounded w-1/3" />
+                          <div className="h-3 bg-muted rounded w-2/3" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {recs && recs.length > 0 && (
+                  <div className="space-y-3" data-testid="recommendations-list">
+                    {recs.map((rec, i) => {
+                      const icons = { weakness: Warning, strength: Trophy, reminder: CalendarDots, motivation: Fire };
+                      const colors = { weakness: "destructive", strength: "primary", reminder: "accent", motivation: "primary" };
+                      const Icon = icons[rec.type] || Lightbulb;
+                      const accent = colors[rec.type] || "primary";
+                      return (
+                        <motion.div
+                          key={i}
+                          variants={fadeUp}
+                          initial="hidden"
+                          animate="visible"
+                          className="glass-card p-4 flex items-start gap-3"
+                          data-testid={`recommendation-${i}`}
+                        >
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0`} style={{ background: `hsl(var(--${accent}) / 0.1)` }}>
+                            <Icon weight="duotone" className="w-4 h-4" style={{ color: `hsl(var(--${accent}))` }} />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold mb-0.5" style={{ fontFamily: "var(--font-heading)" }}>{rec.title}</h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{rec.message}</p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {recs && recs.length === 0 && (
+                  <div className="glass-card p-6 text-center">
+                    <p className="text-sm text-muted-foreground">Not enough data for recommendations yet. Keep studying!</p>
+                  </div>
+                )}
               </>
             )}
           </motion.div>

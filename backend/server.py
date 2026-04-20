@@ -27,6 +27,10 @@ from routes.planner import router as planner_router
 from routes.practice import router as practice_router
 from routes.history import router as history_router
 from routes.analytics import router as analytics_router
+from routes.goals import router as goals_router
+from routes.pomodoro import router as pomodoro_router
+from routes.bookmarks import router as bookmarks_router
+from routes.confidence import router as confidence_router
 from database import client
 
 # Rate limiter
@@ -54,6 +58,10 @@ app.include_router(planner_router)
 app.include_router(practice_router)
 app.include_router(history_router)
 app.include_router(analytics_router)
+app.include_router(goals_router)
+app.include_router(pomodoro_router)
+app.include_router(bookmarks_router)
+app.include_router(confidence_router)
 
 # --- CORS ---
 app.add_middleware(

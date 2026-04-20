@@ -178,3 +178,85 @@ class ExamPlanRequest(BaseModel):
     topics: List[str]
     exam_date: str
     hours_per_day: float
+
+
+
+# --- Study Goals Models ---
+
+class StudyGoalRequest(BaseModel):
+    title: str
+    goal_type: str  # notes_count, quiz_count, quiz_score_avg, study_days, plans_count
+    target_value: float
+    subject: str = ""  # optional filter
+    period: str = "weekly"  # weekly, monthly, custom
+    end_date: str = ""  # for custom period
+
+class StudyGoal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    goal_type: str
+    target_value: float
+    current_value: float = 0
+    subject: str = ""
+    period: str = "weekly"
+    start_date: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    end_date: str = ""
+    status: str = "active"  # active, completed, expired
+    user_id: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+# --- Pomodoro Models ---
+
+class PomodoroSessionRequest(BaseModel):
+    subject: str
+    topic: str = ""
+    duration_minutes: int = 25
+    break_minutes: int = 5
+    completed: bool = True
+
+class PomodoroSession(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    subject: str
+    topic: str = ""
+    duration_minutes: int = 25
+    break_minutes: int = 5
+    completed: bool = True
+    user_id: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+# --- Bookmark Models ---
+
+class BookmarkRequest(BaseModel):
+    item_type: str  # note, practice, plan, exam_plan
+    item_id: str
+
+class Bookmark(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    item_type: str
+    item_id: str
+    user_id: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+# --- Confidence Rating Models ---
+
+class ConfidenceRatingRequest(BaseModel):
+    note_id: str
+    rating: int  # 1-5
+    subject: str = ""
+    chapter: str = ""
+
+class ConfidenceRating(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    note_id: str
+    rating: int
+    subject: str = ""
+    chapter: str = ""
+    user_id: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())

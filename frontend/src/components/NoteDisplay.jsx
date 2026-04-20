@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../lib/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +21,7 @@ import {
   Check,
   X,
   FloppyDisk,
+  BookmarkSimple,
 } from "@phosphor-icons/react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -173,6 +174,35 @@ function NoteTitle({ subject, chapter, note, onNoteUpdate }) {
   const [flashcards, setFlashcards] = useState(null);
   const [loadingFlash, setLoadingFlash] = useState(false);
   const [showFlashcards, setShowFlashcards] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [confidence, setConfidence] = useState(0);
+
+  useEffect(() => {
+    if (note?.id) {
+      api.get(`${API}/bookmarks/check/note/${note.id}`).then((r) => setBookmarked(r.data.bookmarked)).catch(() => {});
+      api.get(`${API}/confidence/${note.id}`).then((r) => setConfidence(r.data.rating || 0)).catch(() => {});
+    }
+  }, [note?.id]);
+
+  const toggleBookmark = async () => {
+    try {
+      const res = await api.post(`${API}/bookmarks`, { item_type: "note", item_id: note.id });
+      setBookmarked(res.data.bookmarked);
+      toast.success(res.data.bookmarked ? "Bookmarked!" : "Bookmark removed");
+    } catch {
+      toast.error("Failed to toggle bookmark");
+    }
+  };
+
+  const rateConfidence = async (rating) => {
+    try {
+      await api.post(`${API}/confidence`, { note_id: note.id, rating, subject: note.subject, chapter: note.chapter });
+      setConfidence(rating);
+      toast.success(`Confidence: ${rating}/5`);
+    } catch {
+      toast.error("Failed to save rating");
+    }
+  };
 
   const handleEdit = async (field, value) => {
     try {
@@ -279,6 +309,15 @@ function NoteTitle({ subject, chapter, note, onNoteUpdate }) {
 
           {/* Action buttons */}
           <div className="flex items-center gap-1.5 flex-wrap">
+            <Button
+              variant={bookmarked ? "default" : "outline"}
+              size="sm"
+              onClick={toggleBookmark}
+              className={`rounded-lg h-8 gap-1.5 text-xs ${bookmarked ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-500" : "border-border"}`}
+            >
+              <BookmarkSimple weight={bookmarked ? "fill" : "bold"} className="w-3.5 h-3.5" />
+              {bookmarked ? "Saved" : "Bookmark"}
+            </Button>
             <Button data-testid="share-btn" variant="outline" size="sm" onClick={handleShare} className="rounded-lg h-8 gap-1.5 text-xs border-border">
               <ShareNetwork weight="bold" className="w-3.5 h-3.5" /> Share
             </Button>
@@ -304,6 +343,25 @@ function NoteTitle({ subject, chapter, note, onNoteUpdate }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
+
+        {/* Confidence Rating */}
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+          <span className="text-xs text-muted-foreground">Confidence:</span>
+          <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => rateConfidence(star)}
+                className={`p-0.5 transition-colors ${star <= confidence ? "text-amber-400" : "text-muted-foreground/30 hover:text-amber-300"}`}
+              >
+                <Star weight={star <= confidence ? "fill" : "regular"} className="w-4 h-4" />
+              </button>
+            ))}
+          </div>
+          {confidence > 0 && (
+            <span className="text-[10px] text-muted-foreground ml-1">{confidence}/5</span>
+          )}
         </div>
       </div>
 

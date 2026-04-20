@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import api from "../lib/api";
+import { toast } from "sonner";
 import Header from "../components/Header";
+import { sendToWebhook } from "../lib/webhook";
+import { Button } from "../components/ui/button";
 import { motion } from "framer-motion";
-import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning, Trophy, Target, Fire, DownloadSimple, Lightbulb, ArrowRight, Warning, Sparkle, Barbell } from "@phosphor-icons/react";
+import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning, Trophy, Target, Fire, DownloadSimple, Lightbulb, ArrowRight, Warning, Sparkle, Barbell, Scroll } from "@phosphor-icons/react";
 
 const API = "/api";
 
@@ -320,6 +323,8 @@ export default function AnalyticsPage() {
   const [exporting, setExporting] = useState(false);
   const [recs, setRecs] = useState(null);
   const [recsLoading, setRecsLoading] = useState(false);
+  const [weeklyReport, setWeeklyReport] = useState(null);
+  const [weeklyLoading, setWeeklyLoading] = useState(false);
 
   useEffect(() => {
     api.get(`${API}/analytics`)
@@ -351,6 +356,26 @@ export default function AnalyticsPage() {
       toast.error("Failed to export report");
     } finally {
       setExporting(false);
+    }
+  };
+
+  const loadWeeklyReport = async () => {
+    setWeeklyLoading(true);
+    try {
+      const res = await api.get(`${API}/analytics/weekly-report`);
+      setWeeklyReport(res.data);
+      sendToWebhook({
+        type: "weekly_report",
+        period: res.data.period,
+        summary: res.data.summary,
+        grade: res.data.grade,
+        stats: res.data.stats,
+        timestamp: new Date().toISOString(),
+      });
+    } catch {
+      toast.error("Failed to generate weekly report");
+    } finally {
+      setWeeklyLoading(false);
     }
   };
 
@@ -520,6 +545,104 @@ export default function AnalyticsPage() {
             )}
           </motion.div>
         </div>
+
+        {/* Weekly AI Report Section */}
+        <motion.div variants={fadeUp} className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold flex items-center gap-2" style={{ fontFamily: "var(--font-heading)" }}>
+              <Scroll weight="duotone" className="w-5 h-5 text-[hsl(var(--primary))]" />
+              Weekly AI Report
+            </h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadWeeklyReport}
+              disabled={weeklyLoading}
+              className="rounded-lg gap-2 text-xs"
+            >
+              {weeklyLoading ? (
+                <><span className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /> Generating...</>
+              ) : (
+                <><Sparkle weight="bold" className="w-3.5 h-3.5" /> Generate Report</>
+              )}
+            </Button>
+          </div>
+
+          {weeklyReport && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 rounded-2xl space-y-5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{weeklyReport.period}</span>
+                {weeklyReport.grade && (
+                  <span className={`text-2xl font-black ${
+                    weeklyReport.grade === "A" ? "text-emerald-500" :
+                    weeklyReport.grade === "B" ? "text-blue-500" :
+                    weeklyReport.grade === "C" ? "text-amber-500" :
+                    "text-red-400"
+                  }`}>{weeklyReport.grade}</span>
+                )}
+              </div>
+
+              <p className="text-sm leading-relaxed">{weeklyReport.summary}</p>
+
+              {/* Quick stats row */}
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { label: "Notes", value: weeklyReport.stats?.notes_count },
+                  { label: "Quizzes", value: weeklyReport.stats?.tests_count },
+                  { label: "Pomodoro", value: `${weeklyReport.stats?.pomodoro_minutes || 0}m` },
+                  { label: "Avg Score", value: `${weeklyReport.stats?.avg_quiz_score || 0}%` },
+                ].map((s) => (
+                  <div key={s.label} className="text-center p-2 rounded-lg bg-muted/30">
+                    <div className="text-lg font-bold text-[hsl(var(--primary))]">{s.value}</div>
+                    <div className="text-[10px] text-muted-foreground">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {weeklyReport.highlights?.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-2">Highlights</h4>
+                  <ul className="space-y-1">
+                    {weeklyReport.highlights.map((h, i) => (
+                      <li key={i} className="text-xs flex items-start gap-2">
+                        <Trophy weight="fill" className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {weeklyReport.areas_to_improve?.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2">Areas to Improve</h4>
+                  <ul className="space-y-1">
+                    {weeklyReport.areas_to_improve.map((a, i) => (
+                      <li key={i} className="text-xs flex items-start gap-2">
+                        <Target weight="fill" className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                        {a}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {weeklyReport.next_week_tips?.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--primary))] mb-2">Tips for Next Week</h4>
+                  <ul className="space-y-1">
+                    {weeklyReport.next_week_tips.map((t, i) => (
+                      <li key={i} className="text-xs flex items-start gap-2">
+                        <Lightbulb weight="fill" className="w-3.5 h-3.5 text-[hsl(var(--primary))] mt-0.5 shrink-0" />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </motion.div>
       </main>
     </div>
   );

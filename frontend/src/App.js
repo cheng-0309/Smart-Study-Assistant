@@ -12,6 +12,8 @@ import PlannerPage from "./pages/PlannerPage";
 import PracticePage from "./pages/PracticePage";
 import HistoryPage from "./pages/HistoryPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import GoalsPage from "./pages/GoalsPage";
+import PomodoroPage from "./pages/PomodoroPage";
 import SharedNotePage from "./pages/SharedNotePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -40,6 +42,8 @@ function App() {
             <Route path="/practice" element={<ProtectedRoute><PracticePage /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+            <Route path="/goals" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
+            <Route path="/pomodoro" element={<ProtectedRoute><PomodoroPage /></ProtectedRoute>} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

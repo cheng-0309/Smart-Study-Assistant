@@ -1,4 +1,4 @@
-import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock, ChartBar, SignOut, User } from "@phosphor-icons/react";
+import { Sun, Moon, BookOpenText, ClockCounterClockwise, NotePencil, CalendarDots, Exam, Clock, ChartBar, SignOut, User, Target, Timer } from "@phosphor-icons/react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
@@ -15,6 +15,8 @@ const NAV_ITEMS = [
   { path: "/notes", label: "Notes", icon: NotePencil },
   { path: "/planner", label: "Planner", icon: CalendarDots },
   { path: "/practice", label: "Practice", icon: Exam },
+  { path: "/goals", label: "Goals", icon: Target },
+  { path: "/pomodoro", label: "Pomodoro", icon: Timer },
   { path: "/history", label: "History", icon: Clock },
   { path: "/analytics", label: "Analytics", icon: ChartBar },
 ];

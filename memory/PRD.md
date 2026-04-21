@@ -37,6 +37,9 @@ AI-powered study assistant with Notes Generator, Study Planner, Practice Tests, 
 - [x] API Rate Limiting (10/min on AI endpoints)
 - [x] Data Migration (existing data -> admin user)
 - [x] ConfirmDialog on deletes
+- [x] Grouped Sidebar Navigation (CREATE/TRACK/REVIEW) replacing flat top navbar
+- [x] Data-Rich Dashboard homepage (stats, goals, activity, quick actions)
+- [x] Mobile hamburger menu with drawer navigation
 
 ## Admin Credentials
 - Email: admin@studyforge.com

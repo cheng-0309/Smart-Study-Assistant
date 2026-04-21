@@ -25,7 +25,7 @@ import {
   Code,
   Article,
 } from "@phosphor-icons/react";
-import Header from "../components/Header";
+import AppLayout from "../components/AppLayout";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -596,11 +596,8 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <main className="flex-1 overflow-y-auto" data-testid="history-content">
-        <div className="max-w-[960px] mx-auto py-8 px-4 md:px-6">
+    <AppLayout>
+      <div className="p-6 md:p-8 max-w-[960px] mx-auto" data-testid="history-content">
           {/* Page Header */}
           <div className="mb-8">
             <div className="overline text-muted-foreground flex items-center gap-2 mb-2">
@@ -683,8 +680,7 @@ export default function HistoryPage() {
               ))}
             </AnimatePresence>
           </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

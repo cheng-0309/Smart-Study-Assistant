@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../lib/api";
 import { toast } from "sonner";
-import Header from "../components/Header";
+import AppLayout from "../components/AppLayout";
 import { motion, AnimatePresence } from "framer-motion";
 import { Target, Plus, Trash, Check, TrendUp, Spinner } from "@phosphor-icons/react";
 import { Button } from "../components/ui/button";
@@ -110,10 +110,8 @@ export default function GoalsPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" data-testid="goals-page">
-      <Header />
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto py-8 px-4 md:px-6">
+    <AppLayout>
+      <div className="p-6 md:p-8 max-w-3xl mx-auto" data-testid="goals-page">
           <div className="flex items-center gap-3 mb-6">
             <Target weight="duotone" className="w-5 h-5 text-[hsl(var(--primary))]" />
             <h1 className="text-2xl font-black tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
@@ -155,7 +153,6 @@ export default function GoalsPage() {
             <div className="text-center py-12 text-muted-foreground text-sm">No goals yet. Create one above to start tracking your progress!</div>
           )}
         </div>
-      </main>
-    </div>
+    </AppLayout>
   );
 }

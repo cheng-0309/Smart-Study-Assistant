@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../lib/api";
 import { toast } from "sonner";
-import Header from "../components/Header";
+import AppLayout from "../components/AppLayout";
 import NoteForm from "../components/NoteForm";
 import NoteDisplay from "../components/NoteDisplay";
 import SavedNotes from "../components/SavedNotes";
@@ -152,14 +152,9 @@ export default function NotesPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header
-        onToggleSidebar={() => setSidebarOpen((p) => !p)}
-        sidebarOpen={sidebarOpen}
-      />
-
-      <div className="flex-1 flex overflow-hidden">
-        <main
+    <AppLayout>
+      <div className="flex-1 flex overflow-hidden h-[calc(100vh-48px)] md:h-screen">
+        <div
           className="flex-1 overflow-y-auto"
           data-testid="main-content"
         >
@@ -193,7 +188,7 @@ export default function NotesPage() {
               )}
             </AnimatePresence>
           </div>
-        </main>
+        </div>
 
         <AnimatePresence>
           {sidebarOpen && (
@@ -217,6 +212,6 @@ export default function NotesPage() {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </AppLayout>
   );
 }

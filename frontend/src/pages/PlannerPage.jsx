@@ -17,7 +17,7 @@ import {
   Target,
   CopySimple,
 } from "@phosphor-icons/react";
-import Header from "../components/Header";
+import AppLayout from "../components/AppLayout";
 import ExamPlanForm from "../components/ExamPlanForm";
 import ExamPlanDisplay from "../components/ExamPlanDisplay";
 import { sendToWebhook } from "../lib/webhook";
@@ -461,14 +461,9 @@ export default function PlannerPage() {
   const currentActive = activeTab === "regular" ? activePlan : activeExamPlan;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header
-        onToggleSidebar={() => setSidebarOpen((p) => !p)}
-        sidebarOpen={sidebarOpen}
-      />
-
-      <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-y-auto" data-testid="planner-content">
+    <AppLayout>
+      <div className="flex-1 flex overflow-hidden h-[calc(100vh-48px)] md:h-screen">
+        <div className="flex-1 overflow-y-auto" data-testid="planner-content">
           <div className="max-w-[960px] mx-auto py-6 px-4 md:px-6">
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-0">
@@ -576,7 +571,7 @@ export default function PlannerPage() {
               )}
             </AnimatePresence>
           </div>
-        </main>
+        </div>
 
         <AnimatePresence>
           {sidebarOpen && (
@@ -603,6 +598,6 @@ export default function PlannerPage() {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </AppLayout>
   );
 }

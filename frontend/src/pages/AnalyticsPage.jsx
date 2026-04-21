@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../lib/api";
-import Header from "../components/Header";
+import AppLayout from "../components/AppLayout";
 import { motion } from "framer-motion";
 import { ChartBar, NotePencil, CalendarDots, Exam, Brain, TrendUp, Books, Lightning, Trophy, Target, Fire, DownloadSimple, Lightbulb, ArrowRight, Warning, Sparkle, Barbell } from "@phosphor-icons/react";
 
@@ -356,10 +356,8 @@ export default function AnalyticsPage() {
   const t = data?.totals || {};
 
   return (
-    <div className="min-h-screen flex flex-col" data-testid="analytics-page">
-      <Header />
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto py-8 px-4 md:px-6">
+    <AppLayout>
+      <div className="p-6 md:p-8 max-w-5xl mx-auto" data-testid="analytics-page">
           <motion.div initial="hidden" animate="visible" variants={stagger}>
             <motion.div variants={fadeUp} className="mb-8">
               <div className="flex items-center justify-between">
@@ -519,7 +517,6 @@ export default function AnalyticsPage() {
             )}
           </motion.div>
         </div>
-      </main>
-    </div>
+    </AppLayout>
   );
 }

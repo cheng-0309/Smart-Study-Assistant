@@ -21,7 +21,7 @@ import {
   Eye,
   Star,
 } from "@phosphor-icons/react";
-import Header from "../components/Header";
+import AppLayout from "../components/AppLayout";
 import { sendToWebhook } from "../lib/webhook";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -844,14 +844,9 @@ export default function PracticePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header
-        onToggleSidebar={() => setSidebarOpen((p) => !p)}
-        sidebarOpen={sidebarOpen}
-      />
-
-      <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-y-auto" data-testid="practice-content">
+    <AppLayout>
+      <div className="flex-1 flex overflow-hidden h-[calc(100vh-48px)] md:h-screen">
+        <div className="flex-1 overflow-y-auto" data-testid="practice-content">
           <div className="max-w-[960px] mx-auto py-6 px-4 md:px-6">
             <PracticeForm onGenerate={handleGenerate} isLoading={isLoading} />
 
@@ -912,7 +907,7 @@ export default function PracticePage() {
               )}
             </AnimatePresence>
           </div>
-        </main>
+        </div>
 
         <AnimatePresence>
           {sidebarOpen && (
@@ -934,6 +929,6 @@ export default function PracticePage() {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </AppLayout>
   );
 }

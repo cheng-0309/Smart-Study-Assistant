@@ -701,6 +701,7 @@ async def root():
 @api_router.post("/notes/generate", response_model=StudyNote)
 @limiter.limit("10/minute")
 async def generate_notes(req: GenerateRequest, request: Request):
+    user = await get_current_user(request)
     valid_note_types = ["quick_revision", "detailed", "exam_focused"]
     note_type = req.note_type if req.note_type in valid_note_types else "detailed"
 
@@ -712,46 +713,56 @@ async def generate_notes(req: GenerateRequest, request: Request):
         content=content
     )
     doc = note.model_dump()
+    doc["user_id"] = user["_id"]
     await db.study_notes.insert_one(doc)
-    return note
+    doc.pop("_id", None)
+    return doc
 
 @api_router.get("/notes", response_model=List[StudyNote])
-async def get_all_notes():
-    notes = await db.study_notes.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+async def get_all_notes(request: Request):
+    user = await get_current_user(request)
+    notes = await db.study_notes.find({"user_id": user["_id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return notes
 
 @api_router.get("/notes/search")
-async def search_notes(q: str = ""):
-    """Search notes by subject, chapter, or note_type"""
+async def search_notes(request: Request, q: str = ""):
+    user = await get_current_user(request)
+    base = {"user_id": user["_id"]}
     if not q.strip():
-        notes = await db.study_notes.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+        notes = await db.study_notes.find(base, {"_id": 0}).sort("created_at", -1).to_list(50)
         return notes
     query = {
-        "$or": [
-            {"subject": {"$regex": q, "$options": "i"}},
-            {"chapter": {"$regex": q, "$options": "i"}},
-            {"note_type": {"$regex": q, "$options": "i"}},
+        "$and": [
+            base,
+            {"$or": [
+                {"subject": {"$regex": q, "$options": "i"}},
+                {"chapter": {"$regex": q, "$options": "i"}},
+                {"note_type": {"$regex": q, "$options": "i"}},
+            ]}
         ]
     }
     notes = await db.study_notes.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
     return notes
 
 @api_router.get("/notes/{note_id}", response_model=StudyNote)
-async def get_note(note_id: str):
-    note = await db.study_notes.find_one({"id": note_id}, {"_id": 0})
+async def get_note(note_id: str, request: Request):
+    user = await get_current_user(request)
+    note = await db.study_notes.find_one({"id": note_id, "user_id": user["_id"]}, {"_id": 0})
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     return note
 
 @api_router.delete("/notes/{note_id}")
-async def delete_note(note_id: str):
-    result = await db.study_notes.delete_one({"id": note_id})
+async def delete_note(note_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.study_notes.delete_one({"id": note_id, "user_id": user["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Note not found")
     return {"message": "Note deleted"}
 
 @api_router.put("/notes/{note_id}", response_model=StudyNote)
-async def update_note(note_id: str, req: NoteUpdateRequest):
+async def update_note(note_id: str, req: NoteUpdateRequest, request: Request):
+    user = await get_current_user(request)
     update_fields = {}
     if req.subject is not None:
         update_fields["subject"] = req.subject
@@ -765,7 +776,7 @@ async def update_note(note_id: str, req: NoteUpdateRequest):
         update_fields["tags"] = req.tags
     if not update_fields:
         raise HTTPException(status_code=400, detail="No fields to update")
-    result = await db.study_notes.update_one({"id": note_id}, {"$set": update_fields})
+    result = await db.study_notes.update_one({"id": note_id, "user_id": user["_id"]}, {"$set": update_fields})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Note not found")
     updated = await db.study_notes.find_one({"id": note_id}, {"_id": 0})
@@ -828,8 +839,9 @@ async def generate_flashcards(note_id: str):
     return {"note_id": note_id, "subject": note.get("subject"), "chapter": note.get("chapter"), "cards": cards}
 
 @api_router.get("/tags")
-async def get_all_tags():
-    notes = await db.study_notes.find({"tags": {"$exists": True, "$ne": []}}, {"_id": 0, "tags": 1}).to_list(500)
+async def get_all_tags(request: Request):
+    user = await get_current_user(request)
+    notes = await db.study_notes.find({"user_id": user["_id"], "tags": {"$exists": True, "$ne": []}}, {"_id": 0, "tags": 1}).to_list(500)
     all_tags = set()
     for n in notes:
         for t in n.get("tags", []):
@@ -839,7 +851,8 @@ async def get_all_tags():
 # --- Planner Routes ---
 
 @api_router.post("/planner/generate", response_model=StudyPlan)
-async def generate_planner(req: PlannerRequest):
+async def generate_planner(req: PlannerRequest, request: Request):
+    user = await get_current_user(request)
     days = await generate_planner_with_ai(req.topic, req.hours_per_day, req.num_days)
     plan = StudyPlan(
         topic=req.topic,
@@ -849,17 +862,21 @@ async def generate_planner(req: PlannerRequest):
         plain_text=format_plan_plain_text(days)
     )
     doc = plan.model_dump()
+    doc["user_id"] = user["_id"]
     await db.study_plans.insert_one(doc)
-    return plan
+    doc.pop("_id", None)
+    return doc
 
 @api_router.get("/planners", response_model=List[StudyPlan])
-async def get_all_planners():
-    plans = await db.study_plans.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+async def get_all_planners(request: Request):
+    user = await get_current_user(request)
+    plans = await db.study_plans.find({"user_id": user["_id"]}, {"_id": 0}).sort("created_at", -1).to_list(50)
     return plans
 
 @api_router.delete("/planners/{plan_id}")
-async def delete_planner(plan_id: str):
-    result = await db.study_plans.delete_one({"id": plan_id})
+async def delete_planner(plan_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.study_plans.delete_one({"id": plan_id, "user_id": user["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Plan not found")
     return {"message": "Plan deleted"}
@@ -867,7 +884,8 @@ async def delete_planner(plan_id: str):
 # --- Exam Planner Routes ---
 
 @api_router.post("/planner/exam/generate", response_model=ExamPlan)
-async def generate_exam_plan(req: ExamPlanRequest):
+async def generate_exam_plan(req: ExamPlanRequest, request: Request):
+    user = await get_current_user(request)
     try:
         exam_date = datetime.fromisoformat(req.exam_date.replace("Z", "+00:00")).date()
     except ValueError:
@@ -899,17 +917,21 @@ async def generate_exam_plan(req: ExamPlanRequest):
         days=days
     )
     doc = plan.model_dump()
+    doc["user_id"] = user["_id"]
     await db.exam_plans.insert_one(doc)
-    return plan
+    doc.pop("_id", None)
+    return doc
 
 @api_router.get("/exam-planners", response_model=List[ExamPlan])
-async def get_all_exam_planners():
-    plans = await db.exam_plans.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+async def get_all_exam_planners(request: Request):
+    user = await get_current_user(request)
+    plans = await db.exam_plans.find({"user_id": user["_id"]}, {"_id": 0}).sort("created_at", -1).to_list(50)
     return plans
 
 @api_router.delete("/exam-planners/{plan_id}")
-async def delete_exam_planner(plan_id: str):
-    result = await db.exam_plans.delete_one({"id": plan_id})
+async def delete_exam_planner(plan_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.exam_plans.delete_one({"id": plan_id, "user_id": user["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Exam plan not found")
     return {"message": "Exam plan deleted"}
@@ -919,6 +941,7 @@ async def delete_exam_planner(plan_id: str):
 @api_router.post("/practice/generate", response_model=PracticeTest)
 @limiter.limit("10/minute")
 async def generate_practice(req: PracticeRequest, request: Request):
+    user = await get_current_user(request)
     valid_types = ["mixed", "mcq", "true_false", "numerical", "short_answer", "long_answer"]
     q_type = req.question_type if req.question_type in valid_types else "mixed"
     diff = req.difficulty if req.difficulty in ("easy", "medium", "hard", "mixed") else "mixed"
@@ -931,17 +954,21 @@ async def generate_practice(req: PracticeRequest, request: Request):
         questions=questions
     )
     doc = test.model_dump()
+    doc["user_id"] = user["_id"]
     await db.practice_tests.insert_one(doc)
-    return test
+    doc.pop("_id", None)
+    return doc
 
 @api_router.get("/practices", response_model=List[PracticeTest])
-async def get_all_practices():
-    tests = await db.practice_tests.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+async def get_all_practices(request: Request):
+    user = await get_current_user(request)
+    tests = await db.practice_tests.find({"user_id": user["_id"]}, {"_id": 0}).sort("created_at", -1).to_list(50)
     return tests
 
 @api_router.delete("/practices/{test_id}")
-async def delete_practice(test_id: str):
-    result = await db.practice_tests.delete_one({"id": test_id})
+async def delete_practice(test_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.practice_tests.delete_one({"id": test_id, "user_id": user["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Test not found")
     return {"message": "Test deleted"}
@@ -949,7 +976,8 @@ async def delete_practice(test_id: str):
 # --- Quiz Score Routes ---
 
 @api_router.post("/quiz-scores")
-async def save_quiz_score(req: QuizScoreRequest):
+async def save_quiz_score(req: QuizScoreRequest, request: Request):
+    user = await get_current_user(request)
     pct = round((req.correct / req.total_gradable) * 100, 1) if req.total_gradable > 0 else 0
     record = QuizScoreRecord(
         test_id=req.test_id,
@@ -962,23 +990,27 @@ async def save_quiz_score(req: QuizScoreRequest):
         score_pct=pct,
     )
     doc = record.model_dump()
+    doc["user_id"] = user["_id"]
     await db.quiz_scores.insert_one(doc)
     doc.pop("_id", None)
     return doc
 
 @api_router.get("/quiz-scores")
-async def get_quiz_scores():
-    scores = await db.quiz_scores.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+async def get_quiz_scores(request: Request):
+    user = await get_current_user(request)
+    scores = await db.quiz_scores.find({"user_id": user["_id"]}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return scores
 
 # --- History Routes ---
 
 @api_router.get("/history")
-async def get_unified_history(item_type: Optional[str] = None):
+async def get_unified_history(request: Request, item_type: Optional[str] = None):
+    user = await get_current_user(request)
+    uid = user["_id"]
     items = []
 
     if item_type is None or item_type == "note":
-        notes = await db.study_notes.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        notes = await db.study_notes.find({"user_id": uid}, {"_id": 0}).sort("created_at", -1).to_list(100)
         for n in notes:
             items.append({
                 "type": "note",
@@ -996,7 +1028,7 @@ async def get_unified_history(item_type: Optional[str] = None):
             })
 
     if item_type is None or item_type == "plan":
-        plans = await db.study_plans.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        plans = await db.study_plans.find({"user_id": uid}, {"_id": 0}).sort("created_at", -1).to_list(100)
         for p in plans:
             items.append({
                 "type": "plan",
@@ -1013,7 +1045,7 @@ async def get_unified_history(item_type: Optional[str] = None):
             })
 
     if item_type is None or item_type == "practice":
-        tests = await db.practice_tests.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        tests = await db.practice_tests.find({"user_id": uid}, {"_id": 0}).sort("created_at", -1).to_list(100)
         for t in tests:
             items.append({
                 "type": "practice",
@@ -1030,7 +1062,7 @@ async def get_unified_history(item_type: Optional[str] = None):
             })
 
     if item_type is None or item_type == "exam_plan":
-        exam_plans = await db.exam_plans.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        exam_plans = await db.exam_plans.find({"user_id": uid}, {"_id": 0}).sort("created_at", -1).to_list(100)
         for ep in exam_plans:
             topics_str = ", ".join(ep.get("topics", [])[:3])
             if len(ep.get("topics", [])) > 3:
@@ -1073,14 +1105,16 @@ async def delete_history_item(item_type: str, item_id: str):
 # --- Analytics Routes ---
 
 @api_router.get("/analytics")
-async def get_analytics():
-    notes_count = await db.study_notes.count_documents({})
-    plans_count = await db.study_plans.count_documents({})
-    exam_plans_count = await db.exam_plans.count_documents({})
-    practice_count = await db.practice_tests.count_documents({})
+async def get_analytics(request: Request):
+    user = await get_current_user(request)
+    uid = user["_id"]
+    notes_count = await db.study_notes.count_documents({"user_id": uid})
+    plans_count = await db.study_plans.count_documents({"user_id": uid})
+    exam_plans_count = await db.exam_plans.count_documents({"user_id": uid})
+    practice_count = await db.practice_tests.count_documents({"user_id": uid})
 
     # Subject breakdown for notes
-    notes_cursor = db.study_notes.find({}, {"_id": 0, "subject": 1, "note_type": 1, "created_at": 1})
+    notes_cursor = db.study_notes.find({"user_id": uid}, {"_id": 0, "subject": 1, "note_type": 1, "created_at": 1})
     notes_list = await notes_cursor.to_list(500)
     subject_counts = {}
     note_type_counts = {}
@@ -1091,7 +1125,7 @@ async def get_analytics():
         note_type_counts[nt] = note_type_counts.get(nt, 0) + 1
 
     # Quiz stats
-    tests_cursor = db.practice_tests.find({}, {"_id": 0, "num_questions": 1, "question_type": 1, "subject": 1})
+    tests_cursor = db.practice_tests.find({"user_id": uid}, {"_id": 0, "num_questions": 1, "question_type": 1, "subject": 1})
     tests_list = await tests_cursor.to_list(500)
     total_questions = sum(t.get("num_questions", 0) for t in tests_list)
     quiz_type_counts = {}
@@ -1106,7 +1140,7 @@ async def get_analytics():
     activity = {}
     for coll_name, label in [("study_notes", "notes"), ("study_plans", "plans"), ("exam_plans", "exam_plans"), ("practice_tests", "quizzes")]:
         cursor = db[coll_name].find(
-            {"created_at": {"$gte": thirty_days_ago}},
+            {"user_id": uid, "created_at": {"$gte": thirty_days_ago}},
             {"_id": 0, "created_at": 1}
         )
         docs = await cursor.to_list(500)
@@ -1119,7 +1153,7 @@ async def get_analytics():
     activity_list = sorted(activity.values(), key=lambda x: x["date"])
 
     # Quiz score analytics
-    scores_cursor = db.quiz_scores.find({}, {"_id": 0})
+    scores_cursor = db.quiz_scores.find({"user_id": uid}, {"_id": 0})
     scores_list = await scores_cursor.to_list(500)
 
     avg_accuracy = 0
@@ -1173,13 +1207,13 @@ async def get_analytics():
             "subject_accuracy": subject_accuracy,
             "score_trend": score_trend,
         },
-        "streaks": await compute_streaks(),
+        "streaks": await compute_streaks(uid),
     }
 
-async def compute_streaks():
+async def compute_streaks(uid: str):
     all_dates = set()
     for coll_name in ["study_notes", "study_plans", "exam_plans", "practice_tests", "quiz_scores"]:
-        cursor = db[coll_name].find({}, {"_id": 0, "created_at": 1})
+        cursor = db[coll_name].find({"user_id": uid}, {"_id": 0, "created_at": 1})
         docs = await cursor.to_list(2000)
         for d in docs:
             ca = d.get("created_at", "")
@@ -1227,7 +1261,7 @@ async def compute_streaks():
     activity_counts = {}
     for coll_name in ["study_notes", "study_plans", "exam_plans", "practice_tests"]:
         cutoff = (base - timedelta(days=48)).isoformat()
-        cursor = db[coll_name].find({"created_at": {"$gte": cutoff}}, {"_id": 0, "created_at": 1})
+        cursor = db[coll_name].find({"user_id": uid, "created_at": {"$gte": cutoff}}, {"_id": 0, "created_at": 1})
         docs = await cursor.to_list(500)
         for d in docs:
             day = d["created_at"][:10]
@@ -1250,26 +1284,27 @@ async def compute_streaks():
     }
 
 @api_router.get("/analytics/export")
-async def export_analytics_report():
+async def export_analytics_report(request: Request):
     """Generate a text-based analytics report."""
-    # Reuse analytics data
-    notes_count = await db.study_notes.count_documents({})
-    plans_count = await db.study_plans.count_documents({})
-    exam_plans_count = await db.exam_plans.count_documents({})
-    practice_count = await db.practice_tests.count_documents({})
+    user = await get_current_user(request)
+    uid = user["_id"]
+    notes_count = await db.study_notes.count_documents({"user_id": uid})
+    plans_count = await db.study_plans.count_documents({"user_id": uid})
+    exam_plans_count = await db.exam_plans.count_documents({"user_id": uid})
+    practice_count = await db.practice_tests.count_documents({"user_id": uid})
 
-    tests_cursor = db.practice_tests.find({}, {"_id": 0, "num_questions": 1})
+    tests_cursor = db.practice_tests.find({"user_id": uid}, {"_id": 0, "num_questions": 1})
     tests_list = await tests_cursor.to_list(500)
     total_questions = sum(t.get("num_questions", 0) for t in tests_list)
 
-    scores_cursor = db.quiz_scores.find({}, {"_id": 0, "subject": 1, "score_pct": 1, "correct": 1, "total_gradable": 1})
+    scores_cursor = db.quiz_scores.find({"user_id": uid}, {"_id": 0, "subject": 1, "score_pct": 1, "correct": 1, "total_gradable": 1})
     scores_list = await scores_cursor.to_list(500)
     avg_acc = round(sum(s["score_pct"] for s in scores_list) / len(scores_list), 1) if scores_list else 0
 
-    streaks = await compute_streaks()
+    streaks = await compute_streaks(uid)
 
     # Subject breakdown
-    notes_cursor = db.study_notes.find({}, {"_id": 0, "subject": 1})
+    notes_cursor = db.study_notes.find({"user_id": uid}, {"_id": 0, "subject": 1})
     notes_list = await notes_cursor.to_list(500)
     subject_counts = {}
     for n in notes_list:
@@ -1321,19 +1356,21 @@ async def export_analytics_report():
     return {"report": report}
 
 @api_router.get("/analytics/recommendations")
-async def get_study_recommendations():
+async def get_study_recommendations(request: Request):
+    user = await get_current_user(request)
+    uid = user["_id"]
     api_key = os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
         return {"recommendations": []}
 
     # Gather context
-    scores_cursor = db.quiz_scores.find({}, {"_id": 0, "subject": 1, "chapter": 1, "score_pct": 1, "created_at": 1})
+    scores_cursor = db.quiz_scores.find({"user_id": uid}, {"_id": 0, "subject": 1, "chapter": 1, "score_pct": 1, "created_at": 1})
     scores = await scores_cursor.to_list(100)
 
-    notes_cursor = db.study_notes.find({}, {"_id": 0, "subject": 1, "chapter": 1, "created_at": 1})
+    notes_cursor = db.study_notes.find({"user_id": uid}, {"_id": 0, "subject": 1, "chapter": 1, "created_at": 1})
     notes = await notes_cursor.to_list(100)
 
-    streaks = await compute_streaks()
+    streaks = await compute_streaks(uid)
 
     # Build context summary
     context = f"Current streak: {streaks['current_streak']} days. Longest: {streaks['longest_streak']}. Active days: {streaks['total_active_days']}.\n"
